@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace Ndst {
@@ -313,16 +314,22 @@ namespace Ndst {
             }
 
             // Extract files.
-            void ExtractFiles(string path, Folder folder) {
+            List<Tuple<string, ushort>> fileInfo = new List<Tuple<string, ushort>>();
+            void ExtractFiles(string path, string relativePath, Folder folder) {
                 Directory.CreateDirectory(path);
                 foreach (var f in folder.Folders) {
-                    ExtractFiles(path + "/" + f.Name, f);
+                    ExtractFiles(path + "/" + f.Name, relativePath + "/" + f.Name, f);
                 }
                 foreach (var f in folder.Files) {
+                    string fInfo = relativePath + "/" + f.Name;
+                    fInfo += " 0x" + f.Id.ToString("X");
                     System.IO.File.WriteAllBytes(path + "/" + f.Name, f.Data);
+                    fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
                 }
             }
-            ExtractFiles(destFolder, Filesystem);
+            ExtractFiles(destFolder, "..", Filesystem);
+            fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
+            System.IO.File.WriteAllLines(destFolder + "/" + "__ROM__" + "/files.txt", fileInfo.Select(x => x.Item1));
 
         }
 

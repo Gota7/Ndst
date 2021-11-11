@@ -24,7 +24,7 @@ namespace Ndst {
         [JsonConverter(typeof(HexStringJsonConverter))]
         public uint StaticInitEnd { get; set; }
 
-        [JsonIgnore]
+        [JsonConverter(typeof(HexStringJsonConverter))]
         public ushort FileId { get; set; }
         
         [JsonConverter(typeof(HexStringJsonConverter))]
