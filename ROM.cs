@@ -510,8 +510,19 @@ namespace Ndst {
             // Fix first file IDs.
             foreach (var f in folders.Values) {
                 // f.Files = f.Files.OrderBy(x => x.Name).ToList(); = I don't think this should be done.
-                f.FirstFileId = f.Files.OrderBy(x => x.Id).ElementAt(0).Id;
+                if (f.Files.Count > 0) f.FirstFileId = f.Files.OrderBy(x => x.Id).ElementAt(0).Id;
             }
+
+            // Fix folders with no files.
+            void FixFolders(Folder f) {
+                foreach (var folder in f.Folders) {
+                    FixFolders(folder);
+                }
+                if (f.Files.Count == 0) {
+                    f.FirstFileId = f.Folders[0].FirstFileId;
+                }
+            }
+            FixFolders(folders[""]);
 
         }
 
