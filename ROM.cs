@@ -311,7 +311,6 @@ namespace Ndst {
             foreach (var o in Arm7Overlays) {
                 System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm7" + "/" + cnt++ + ".bin", o.Data);
             }
-            // TODO!!!
 
             // Extract files.
             void ExtractFiles(string path, Folder folder) {
