@@ -14,6 +14,8 @@ namespace Ndst {
 
         [JsonConverter(typeof(HexStringJsonConverter))]
         public uint RAMAddress { get; set; }
+        [JsonConverter(typeof(HexStringJsonConverter))]
+        public uint RAMSize { get; set; }
 
         [JsonConverter(typeof(HexStringJsonConverter))]
         public uint BSSSize { get; set; }
@@ -39,7 +41,7 @@ namespace Ndst {
                 Overlay o = new Overlay();
                 o.Id = r.ReadUInt32();
                 o.RAMAddress = r.ReadUInt32();
-                r.ReadUInt32(); // RAM size.
+                o.RAMSize = r.ReadUInt32();
                 o.BSSSize = r.ReadUInt32();
                 o.StaticInitStart = r.ReadUInt32();
                 o.StaticInitEnd = r.ReadUInt32();
@@ -56,7 +58,7 @@ namespace Ndst {
             foreach (var o in ovs) {
                 w.Write(o.Id);
                 w.Write(o.RAMAddress);
-                w.Write(o.Data.Length);
+                w.Write(o.RAMSize);
                 w.Write(o.BSSSize);
                 w.Write(o.StaticInitStart);
                 w.Write(o.StaticInitEnd);
