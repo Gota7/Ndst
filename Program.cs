@@ -7,9 +7,10 @@ namespace Ndst {
     class Program {
 
         static void Main(string[] args) {
-            ROM r = new ROM("Shining.nds");
+            // ROM n = new ROM("NSMB.nds");
+            // n.Extract("ROM");
+            ROM r = new ROM("ROM", "Patch");
             r.Save("Test.nds");
-            r.Extract("ROM");
         }
 
     }

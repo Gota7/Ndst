@@ -24,6 +24,7 @@ namespace Ndst {
         public byte DeviceCapacity;
         public ushort Revision;
         public byte Version;
+        [JsonConverter(typeof(HexStringJsonConverter))]
         public byte Flags;
         [JsonConverter(typeof(HexStringJsonConverter))]
         public uint Arm9EntryAddress;
@@ -70,6 +71,14 @@ namespace Ndst {
             { 0x0103, 0x23C0 },
         };
 
+        // Needed for JSON.
+        internal ROM() {}
+
+        // Create a ROM from extracted content.
+        public ROM(string srcPath, string patchPath) {
+            Pack(srcPath, patchPath);
+        }
+        
         // Create a new ROM.
         public ROM(string filePath) {
 
@@ -304,13 +313,11 @@ namespace Ndst {
             System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "arm7Overlays.json", JsonConvert.SerializeObject(Arm7Overlays, Formatting.Indented));
             Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm9");
             Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm7");
-            int cnt = 0;
             foreach (var o in Arm9Overlays) {
-                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm9" + "/" + cnt++ + ".bin", o.Data);
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm9" + "/" + o.Id + ".bin", o.Data);
             }
-            cnt = 0;
             foreach (var o in Arm7Overlays) {
-                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm7" + "/" + cnt++ + ".bin", o.Data);
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm7" + "/" + o.Id + ".bin", o.Data);
             }
 
             // Extract files.
@@ -335,6 +342,176 @@ namespace Ndst {
 
         // Pack a ROM.
         public void Pack(string srcFolder, string patchFolder) {
+
+            // File reading content.
+            bool UsePatch(string path) {
+                return System.IO.File.Exists(patchFolder + "/" + path);
+            }
+            byte[] ReadFile(string path) {
+                if (UsePatch(path)) {
+                    return System.IO.File.ReadAllBytes(patchFolder + "/" + path);
+                } else {
+                    return System.IO.File.ReadAllBytes(srcFolder + "/" + path);
+                }
+            }
+            string[] ReadFileList(string path) {
+                if (UsePatch(path)) {
+                    return System.IO.File.ReadAllLines(patchFolder + "/" + path);
+                } else {
+                    return System.IO.File.ReadAllLines(srcFolder + "/" + path);
+                }
+            }
+            T ReadJSON<T>(string path) {
+                if (UsePatch(path)) {
+                    return JsonConvert.DeserializeObject<T>(System.IO.File.ReadAllText(patchFolder + "/" + path));
+                } else {
+                    return JsonConvert.DeserializeObject<T>(System.IO.File.ReadAllText(srcFolder + "/" + path));
+                }
+            }
+            List<ushort> validFileIds = new List<ushort>();
+            void VerifyFiles(IEnumerable<ushort> fileIds) {
+                foreach (var u in fileIds) {
+                    if (validFileIds.Contains(u)) {
+                        throw new Exception("ERROR: Duplicate overlay file ID in use: 0x" + u.ToString("X"));
+                    } else {
+                        validFileIds.Add(u);
+                    }
+                }
+            }
+
+            // Get header info and copy it.
+            ROM headerInfo = ReadJSON<ROM>("__ROM__/header.json");
+            GameTitle = headerInfo.GameTitle;
+            GameCode = headerInfo.GameCode;
+            MakerCode = headerInfo.MakerCode;
+            UnitCode = headerInfo.UnitCode;
+            EncryptionSeedSelect = headerInfo.EncryptionSeedSelect;
+            DeviceCapacity = headerInfo.DeviceCapacity;
+            Revision = headerInfo.Revision;
+            Version = headerInfo.Version;
+            Flags = headerInfo.Flags;
+            Arm9EntryAddress = headerInfo.Arm9EntryAddress;
+            Arm9LoadAddress = headerInfo.Arm9LoadAddress;
+            Arm7EntryAddress = headerInfo.Arm7EntryAddress;
+            Arm7LoadAddress = headerInfo.Arm7LoadAddress;
+            NormalCardControlRegisterSettings = headerInfo.NormalCardControlRegisterSettings;
+            SecureCardControlRegisterSettings = headerInfo.SecureCardControlRegisterSettings;
+            SecureAreaCRC = headerInfo.SecureAreaCRC;
+            SecureTransferTimeout = headerInfo.SecureTransferTimeout;
+            Arm9Autoload = headerInfo.Arm9Autoload;
+            Arm7Autoload = headerInfo.Arm7Autoload;
+            SecureDisable = headerInfo.SecureDisable;
+            HeaderSize = headerInfo.HeaderSize;
+
+            // Get the Nintendo logo and banner.
+            NintendoLogo = ReadFile("__ROM__/nintendoLogo.bin");
+            Banner = ReadFile("__ROM__/banner.bin");
+
+            // Fetch Arm payloads.
+            Arm9 = ReadFile("__ROM__/arm9.bin");
+            Arm7 = ReadFile("__ROM__/arm7.bin");
+
+            // Get overlays.
+            Arm9Overlays = ReadJSON<List<Overlay>>("__ROM__/arm9Overlays.json");
+            VerifyFiles(Arm9Overlays.Select(x => x.FileId));
+            Arm7Overlays = ReadJSON<List<Overlay>>("__ROM__/arm7Overlays.json");
+            VerifyFiles(Arm7Overlays.Select(x => x.FileId));
+            foreach (var o in Arm9Overlays) {
+                o.Data = ReadFile("__ROM__/Arm9/" + o.Id + ".bin");
+            }
+            foreach (var o in Arm7Overlays) {
+                o.Data = ReadFile("__ROM__/Arm7/" + o.Id + ".bin");
+            }
+
+            // Read files.
+            ushort currFolderId = 1;
+            string[] fileList = ReadFileList("__ROM__/files.txt");
+            Dictionary<string, Folder> folders = new Dictionary<string, Folder>();
+            Filesystem = new Filesystem();
+            folders.Add("", Filesystem);
+            foreach (var s in fileList) {
+                AddFileToFilesystem(s);
+            }
+
+            // Add a file to the filesystem.
+            void AddFileToFilesystem(string s) {
+
+                // First get its properties.
+                string[] fileProperties = s.Split(" ");
+                string filePath = fileProperties[0];
+                if (!filePath.StartsWith("../")) {
+                    throw new Exception("ERROR: All files must be relative to parent directory \"../\"");
+                } else {
+                    filePath = filePath.Substring(3);
+                }
+
+                // Get file ID.
+                ushort fileId = (ushort)Helper.ReadStringNumber(fileProperties[1]);
+                if (validFileIds.Contains(fileId)) {
+                    throw new Exception("ERROR: File ../" + filePath + " uses duplicate file ID 0x" + fileId.ToString("X"));
+                } else {
+                    validFileIds.Add(fileId);
+                }
+
+                // Proper file name and folder path.
+                string fileName = filePath;
+                string folderPath = "";
+                while (fileName.Contains('/')) {
+                    folderPath += "/" + fileName.Substring(0, fileName.IndexOf('/'));
+                    fileName = fileName.Substring(fileName.IndexOf('/') + 1);
+                }
+                if (folderPath.StartsWith("/")) {
+                    folderPath = folderPath.Substring(1);
+                }
+
+                // New file.
+                File f = new File();
+                f.Name = fileName;
+                f.Id = fileId;
+                f.Data = ReadFile(filePath);
+
+                // Finally add the file to the folder.
+                AddFileToFolder(f, folderPath);
+
+            }
+
+            // Add a file to a folder.
+            void AddFileToFolder(File f, string folderPath) {
+
+                // First check if the folder exists.
+                if (!folders.ContainsKey(folderPath)) {
+                    AppendFolder(folderPath);
+                }
+
+                // Add the file to the folder.
+                folders[folderPath].Files.Add(f);
+
+            }
+
+            // Append a folder.
+            void AppendFolder(string folderPath) {
+                string folderName = folderPath;
+                string baseFolderPath = "";
+                while (folderName.Contains('/')) {
+                    baseFolderPath += "/" + folderName.Substring(0, folderName.IndexOf('/'));
+                    folderName = folderName.Substring(folderName.IndexOf('/') + 1);
+                }
+                if (baseFolderPath.StartsWith("/")) {
+                    baseFolderPath = baseFolderPath.Substring(1);
+                }
+                if (!folders.ContainsKey(baseFolderPath)) {
+                    AppendFolder(baseFolderPath);
+                }
+                Folder f = new Folder() { Id = currFolderId++, Name = folderName };
+                folders[baseFolderPath].Folders.Add(f);
+                folders.Add(folderPath, f);
+            }
+
+            // Fix first file IDs.
+            foreach (var f in folders.Values) {
+                // f.Files = f.Files.OrderBy(x => x.Name).ToList(); = I don't think this should be done.
+                f.FirstFileId = f.Files.OrderBy(x => x.Id).ElementAt(0).Id;
+            }
 
         }
 

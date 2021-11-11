@@ -49,6 +49,9 @@ namespace Ndst {
     // Both IDs are alphabetical.
     public class Filesystem : Folder {
 
+        // Default.
+        public Filesystem() {}
+
         // Create a new filesystem.
         public Filesystem(BinaryReader r, uint fntOff, uint fntSize, uint fatOff, uint fatSize) {
 

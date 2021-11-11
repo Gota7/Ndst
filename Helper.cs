@@ -71,6 +71,21 @@ namespace Ndst {
                 w.Write((byte)0);
             }
         }
+
+        // Read a string as a number.
+        public static long ReadStringNumber(string str) {
+            long val = 0;
+            if (str.StartsWith("0b")) {
+                str = str.Substring(2);
+                val = Convert.ToInt64(str, 2);
+            } else if (str.StartsWith("0x")) {
+                str = str.Substring(2);
+                val = Convert.ToInt64(str, 16);
+            } else {
+                val = Convert.ToInt64(str, 10);
+            }
+            return val;
+        }    
         
     }
 
@@ -84,10 +99,12 @@ namespace Ndst {
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
-            var str = reader.ReadAsString();
-            if (str == null || !str.StartsWith("0x"))
+            var str = (string)reader.Value;
+            if (str == null)
                 throw new JsonSerializationException();
-            return Convert.ToUInt32(str);
+            long val = Helper.ReadStringNumber(str);
+            var ret = Convert.ChangeType(val, objectType);
+            return ret;
         }
         
     }
