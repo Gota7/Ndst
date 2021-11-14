@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ndst.Formats;
 
 namespace Ndst {
 
@@ -38,7 +39,7 @@ namespace Ndst {
     public class File {
         public string Name;
         public ushort Id;
-        public byte[] Data;
+        public IFormat Data;
 
         public override string ToString() => "0x" + Id.ToString("X") + " - " + Name;
     }
@@ -88,8 +89,17 @@ namespace Ndst {
                         uint endOff = r.ReadUInt32();
                         r.BaseStream.Position = startOff;
                         byte[] fileData = r.ReadBytes((int)(endOff - startOff));
+                        IFormat newData = null;
+                        foreach (var pFormat in Helper.FileFormats) {
+                            newData = (IFormat)Activator.CreateInstance(pFormat);
+                            if (newData.IsType(fileData)) {
+                                r.BaseStream.Position = startOff;
+                                newData.Read(r, fileData);
+                                break;
+                            }
+                        }
                         r.BaseStream.Position = bakPos;
-                        ret.Files.Add(new File() { Name = name, Id = currId++, Data = fileData });
+                        ret.Files.Add(new File() { Name = name, Id = currId++, Data = newData });
                     }
                     control = r.ReadByte();
                 }

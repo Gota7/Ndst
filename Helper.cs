@@ -2,12 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Ndst.Formats;
 
 namespace Ndst {
 
     // Extension method helper.
     public static class Helper {
         static Dictionary<string, long> Offsets = new Dictionary<string, long>();
+        public static List<Type> FileFormats = new List<Type>() {
+            typeof(LZFile),
+            typeof(GenericFile)
+        };
 
         // Read a null terminated string.
         public static string ReadNullTerminated(this BinaryReader r) {
@@ -60,6 +65,11 @@ namespace Ndst {
             w.BaseStream.Position = bak;
         }
 
+        // Write data.
+        public static void Write(this BinaryWriter w, IFormat data) {
+            data.Write(w);
+        }
+
         // Write 0s.
         public static void Write0s(this BinaryWriter w, uint num) {
             w.Write(new byte[num]);
@@ -86,6 +96,39 @@ namespace Ndst {
             }
             return val;
         }    
+
+        // Get the MD5 sum.
+        public static byte[] Md5Sum(byte[] data) {
+            byte[] hash;
+            using (var md5 = System.Security.Cryptography.MD5.Create()) {
+                md5.TransformFinalBlock(data, 0, data.Length);
+                hash = md5.Hash;
+            }
+            return hash;
+        }
+
+        // Bytes array match.
+        public static bool BytesMatch(byte[] a, byte[] b) {
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) {
+                if (a[i] != b[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Read an extracted ROM file.
+        public static byte[] ReadROMFile(string path, string srcFolder, string patchFolder) {
+            bool UsePatch() {
+                return System.IO.File.Exists(patchFolder + "/" + path);
+            }
+            if (UsePatch()) {
+                return System.IO.File.ReadAllBytes(patchFolder + "/" + path);
+            } else {
+                return System.IO.File.ReadAllBytes(srcFolder + "/" + path);
+            }
+        }
         
     }
 

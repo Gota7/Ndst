@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ndst.Formats;
 using Newtonsoft.Json;
 
 namespace Ndst {
@@ -329,8 +330,10 @@ namespace Ndst {
                 }
                 foreach (var f in folder.Files) {
                     string fInfo = relativePath + "/" + f.Name;
-                    fInfo += " 0x" + f.Id.ToString("X");
-                    System.IO.File.WriteAllBytes(path + "/" + f.Name, f.Data);
+                    string formatInfo = f.Data.GetFormat();
+                    if (!formatInfo.Equals("")) formatInfo = " " + formatInfo;
+                    fInfo += " 0x" + f.Id.ToString("X") + formatInfo;
+                    f.Data.Extract(path + "/" + f.Name);
                     fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
                 }
             }
@@ -468,7 +471,17 @@ namespace Ndst {
                 File f = new File();
                 f.Name = fileName;
                 f.Id = fileId;
-                f.Data = ReadFile(filePath);
+                string format = fileProperties.Last();
+                if (fileProperties.Length <= 2) format = "";
+                IFormat newData = null;
+                foreach (var pFormat in Helper.FileFormats) {
+                    newData = (IFormat)Activator.CreateInstance(pFormat);
+                    if (newData.IsOfFormat(format)) {
+                        newData.Pack(filePath, srcFolder, patchFolder);
+                        break;
+                    }
+                }
+                f.Data = newData;
 
                 // Finally add the file to the folder.
                 AddFileToFolder(f, folderPath);
