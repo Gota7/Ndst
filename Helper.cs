@@ -118,6 +118,16 @@ namespace Ndst {
             return true;
         }
 
+        // File exists.
+        public static bool ROMFileExists(string path, string srcFolder, string patchFolder) {
+            return System.IO.File.Exists(srcFolder + "/" + path) || System.IO.File.Exists(patchFolder + "/" + path);
+        }
+
+        // If to use patch.
+        public static bool ROMUsePatch(string path, string patchFolder) {
+            return System.IO.File.Exists(patchFolder + "/" + path);
+        }
+
         // Read an extracted ROM file.
         public static byte[] ReadROMFile(string path, string srcFolder, string patchFolder) {
             bool UsePatch() {
@@ -127,6 +137,30 @@ namespace Ndst {
                 return System.IO.File.ReadAllBytes(patchFolder + "/" + path);
             } else {
                 return System.IO.File.ReadAllBytes(srcFolder + "/" + path);
+            }
+        }
+
+        // Read an extracted ROM file lines.
+        public static string[] ReadROMLines(string path, string srcFolder, string patchFolder) {
+            bool UsePatch() {
+                return System.IO.File.Exists(patchFolder + "/" + path);
+            }
+            if (UsePatch()) {
+                return System.IO.File.ReadAllLines(patchFolder + "/" + path);
+            } else {
+                return System.IO.File.ReadAllLines(srcFolder + "/" + path);
+            }
+        }
+
+        // Read extracted JSON.
+        public static T ReadROMJson<T>(string path, string srcFolder, string patchFolder) {
+            bool UsePatch() {
+                return System.IO.File.Exists(patchFolder + "/" + path);
+            }
+            if (UsePatch()) {
+                return JsonConvert.DeserializeObject<T>(patchFolder + "/" + path);
+            } else {
+                return JsonConvert.DeserializeObject<T>(srcFolder + "/" + path);
             }
         }
         

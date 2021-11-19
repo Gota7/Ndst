@@ -63,6 +63,8 @@ namespace Ndst {
         public byte[] Arm7;
         [JsonIgnore]
         public byte[] Banner;
+        [JsonIgnore]
+        BuildSystem BuildSystem;
 
         // Banner lengths.
         public static readonly Dictionary<ushort, uint> BANNER_LENGTHS = new Dictionary<ushort, uint>() {
@@ -81,7 +83,12 @@ namespace Ndst {
         }
         
         // Create a new ROM.
-        public ROM(string filePath) {
+        public ROM(string filePath, bool convertFiles = true) {
+
+            // Build system.
+            if (convertFiles) {
+                BuildSystem = new BuildSystem();
+            }
 
             // Read the file.
             using (Stream s = new FileStream(filePath, FileMode.Open)) {
@@ -162,7 +169,7 @@ namespace Ndst {
                 }
 
                 // Read filesystem.
-                Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize);
+                Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize, convertFiles, BuildSystem);
                 
                 // Dispose.
                 r.Dispose();
@@ -330,9 +337,7 @@ namespace Ndst {
                 }
                 foreach (var f in folder.Files) {
                     string fInfo = relativePath + "/" + f.Name;
-                    string formatInfo = f.Data.GetFormat();
-                    if (!formatInfo.Equals("")) formatInfo = " " + formatInfo;
-                    fInfo += " 0x" + f.Id.ToString("X") + formatInfo;
+                    fInfo += " 0x" + f.Id.ToString("X");
                     f.Data.Extract(path + "/" + f.Name);
                     fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
                 }
@@ -340,6 +345,10 @@ namespace Ndst {
             ExtractFiles(destFolder, "..", Filesystem);
             fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
             System.IO.File.WriteAllLines(destFolder + "/" + "__ROM__" + "/files.txt", fileInfo.Select(x => x.Item1));
+            if (BuildSystem != null) {
+                BuildSystem.WritePrebuiltItems(destFolder);
+                BuildSystem.Write(destFolder, "", true);
+            }
 
         }
 
@@ -380,6 +389,15 @@ namespace Ndst {
                         validFileIds.Add(u);
                     }
                 }
+            }
+
+            // Build system.
+            if (Helper.ROMFileExists("__ROM__/build.txt", srcFolder, patchFolder)) {
+                BuildSystem = new BuildSystem();
+                BuildSystem.Load(srcFolder, patchFolder);
+                BuildSystem.BuildItems(srcFolder, patchFolder, FormatUtil.ConvertItem);
+            } else {
+                BuildSystem = null;
             }
 
             // Get header info and copy it.
@@ -471,17 +489,15 @@ namespace Ndst {
                 File f = new File();
                 f.Name = fileName;
                 f.Id = fileId;
-                string format = fileProperties.Last();
-                if (fileProperties.Length <= 2) format = "";
-                IFormat newData = null;
-                foreach (var pFormat in Helper.FileFormats) {
-                    newData = (IFormat)Activator.CreateInstance(pFormat);
-                    if (newData.IsOfFormat(format)) {
-                        newData.Pack(filePath, srcFolder, patchFolder);
-                        break;
+                if (BuildSystem != null) {
+                    if (BuildSystem.Entries.ContainsKey(filePath)) {
+                        f.Data = new GenericFile() { Data = Helper.ReadROMFile("__ROM__/build/" + filePath + ".0", srcFolder, patchFolder) };
+                    } else {
+                        f.Data = new GenericFile() { Data = Helper.ReadROMFile(filePath, srcFolder, patchFolder) };
                     }
+                } else {
+                    f.Data = new GenericFile() { Data = Helper.ReadROMFile(filePath, srcFolder, patchFolder) };
                 }
-                f.Data = newData;
 
                 // Finally add the file to the folder.
                 AddFileToFolder(f, folderPath);

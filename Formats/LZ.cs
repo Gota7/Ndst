@@ -40,47 +40,16 @@ namespace Ndst.Formats {
             byte[] testData = new byte[CompressedData.Length];
             Array.Copy(CompressedData, testData, testData.Length);
             LZ77.Decompress(ref testData, HasHeader);
-
-            // Get folder and file info.
-            string fileName = Path.GetFileName(path);
-            string folder = Path.GetDirectoryName(path);
-
-            // Write the uncompressed and compressed files.
             System.IO.File.WriteAllBytes(path, testData);
-            Directory.CreateDirectory(folder + "/.LZ");
-            System.IO.File.WriteAllBytes(folder + "/.LZ/" + fileName + ".LZ", CompressedData);
-            System.IO.File.WriteAllBytes(folder + "/.LZ/" + fileName + ".md5", Helper.Md5Sum(testData));
 
         }
 
-        public void Pack(string path, string romPath, string patchPath) {
-            
-            // Check LZ info if exists.
-            bool usePatch = System.IO.File.Exists(patchPath + "/" + path);
-            string fileName = Path.GetFileName(path);
-            string folder = Path.GetDirectoryName(path);
-            string patchPrefix = (usePatch ? patchPath : romPath) + "/";
-            if (System.IO.File.Exists(patchPrefix + folder + "/.LZ/" + fileName + ".LZ") && System.IO.File.Exists(patchPrefix + folder + "/.LZ/" + fileName + ".md5")) {
-                byte[] hash = Helper.ReadROMFile(folder + "/.LZ/" + fileName + ".md5", romPath, patchPath);
-                byte[] file = Helper.ReadROMFile(path, romPath, patchPath);
-                if (Helper.BytesMatch(hash, Helper.Md5Sum(file))) {
-                    CompressedData = Helper.ReadROMFile(folder + "/.LZ/" + fileName + ".LZ", romPath, patchPath);
-                } else {
-                    RecompressData(file);
-                }
-            } else {
-                RecompressData(Helper.ReadROMFile(path, romPath, patchPath));
-            }
+        public void Pack(string path) {
 
-            // Recompress data.
-            void RecompressData(byte[] data) {
-                byte[] hash = Helper.Md5Sum(data);
-                LZ77.LZ77_Compress(ref data, HasHeader);
-                CompressedData = data;
-                Directory.CreateDirectory(patchPrefix + folder + "/.LZ");
-                System.IO.File.WriteAllBytes(patchPrefix + folder + "/.LZ/" + fileName + ".LZ", CompressedData);
-                System.IO.File.WriteAllBytes(patchPrefix + folder + "/.LZ/" + fileName + ".md5", hash);
-            }
+            // Compress data.
+            byte[] data = System.IO.File.ReadAllBytes(path);
+            LZ77.LZ77_Compress(ref data, HasHeader);
+            CompressedData = data;
 
         }
 
@@ -97,6 +66,13 @@ namespace Ndst.Formats {
                 return true;
             }
             return false;
+        }
+
+        public byte[] ContainedFile() {
+            byte[] testData = new byte[CompressedData.Length];
+            Array.Copy(CompressedData, testData, testData.Length);
+            LZ77.Decompress(ref testData, HasHeader);
+            return testData;
         }
 
     }
