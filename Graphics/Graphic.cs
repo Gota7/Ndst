@@ -6,6 +6,7 @@ namespace Ndst.Graphics {
     public class Graphic {
         public Palette Palette;
         public bool Is4BPP;
+        public bool FirstColorTransparent;
         public Tile[,] Tiles;
 
         // A tile.
@@ -17,14 +18,14 @@ namespace Ndst.Graphics {
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 4; j++) {
                             byte col = r.ReadByte();
-                            Colors[i, j * 2] = (byte)(col & 0x0F);
-                            Colors[i, j * 2 + 1] = (byte)(col & 0xF0);
+                            Colors[j * 2, i] = (byte)(col & 0x0F);
+                            Colors[j * 2 + 1, i] = (byte)((col & 0xF0) >> 4);
                         }
                     }
                 } else {
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
-                            Colors[i, j] = r.ReadByte();
+                            Colors[j, i] = r.ReadByte();
                         }
                     }
                 }
@@ -34,15 +35,15 @@ namespace Ndst.Graphics {
                 if (is4BPP) {
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 4; j++) {
-                            byte col = (byte)((Colors[i, j * 2 + 1] << 4) & 0xF0);
-                            col |= (byte)(Colors[i, j * 2] & 0x0F);
+                            byte col = (byte)((Colors[j * 2 + 1, i] << 4) & 0xF0);
+                            col |= (byte)(Colors[j * 2, i] & 0x0F);
                             w.Write(col);
                         }
                     }
                 } else {
                     for (int i = 0; i < 8; i++) {
                         for (int j = 0; j < 8; j++) {
-                            w.Write(Colors[i, j]);
+                            w.Write(Colors[j, i]);
                         }
                     }
                 }
@@ -70,8 +71,9 @@ namespace Ndst.Graphics {
 
         }
 
-        public void Read(BinaryReader r, int widthInTiles, int heightInTiles, bool is4BPP) {
+        public void Read(BinaryReader r, int widthInTiles, int heightInTiles, bool is4BPP, bool firstColorTransparent) {
             Is4BPP = is4BPP;
+            FirstColorTransparent = firstColorTransparent;
             Tiles = new Tile[widthInTiles, heightInTiles];
             for (int i = 0; i < heightInTiles; i++) {
                 for (int j = 0; j < widthInTiles; j++) {

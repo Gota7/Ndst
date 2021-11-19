@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Ndst.Formats;
+using System.Text;
 
 namespace Ndst {
 
@@ -35,6 +36,21 @@ namespace Ndst {
                 }
             }
             return ret;
+        }
+
+        public static string ReadFixedLenWide(this BinaryReader r, uint len) {
+            List<byte> ret = new List<byte>();
+            for (uint i = 0; i < len * 2; i++) {
+                byte b1 = r.ReadByte();
+                byte b2 = r.ReadByte();
+                if (b1 == 0 && b2 == 0) {
+                    break;
+                } else {
+                    ret.Add(b1);
+                    ret.Add(b2);
+                }
+            }
+            return Encoding.Unicode.GetString(ret.ToArray());
         }
 
         // Write a fixed length string.

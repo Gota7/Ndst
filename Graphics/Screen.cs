@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Ndst.Graphics {
 
@@ -53,6 +55,7 @@ namespace Ndst.Graphics {
             s.Tiles = new Tile[g.Tiles.GetLength(0), g.Tiles.GetLength(1)];
             for (int i = 0; i < g.Tiles.GetLength(1); i++) {
                 for (int j = 0; j < g.Tiles.GetLength(0); j++) {
+                    s.Tiles[j, i] = new Tile();
                     s.Tiles[j, i].TileIndex = (ushort)(i * g.Tiles.GetLength(0) + j);
                 }
             }
@@ -67,6 +70,43 @@ namespace Ndst.Graphics {
                 for (int j = 0; j < widthInTiles; j++) {
                     Tiles[j, i] = new Tile();
                     Tiles[j, i].Read(r, Affine, ref affinePrefix, widthInTiles * heightInTiles);
+                }
+            }
+        }
+
+        public Image<Argb32> ToImage() {
+            Image<Argb32> ret = new Image<Argb32>(Configuration.Default, Tiles.GetLength(0) * 8, Tiles.GetLength(1) * 8);
+            for (int i = 0; i < Tiles.GetLength(0); i++) {
+                for (int j = 0; j < Tiles.GetLength(1); j++) {
+                    WriteScreenTile(i, j);
+                }
+            }
+            return ret;
+            void WriteScreenTile(int tileX, int tileY) {
+                Tile t = Tiles[tileX, tileY];
+                int indexX = t.TileIndex % Graphic.Tiles.GetLength(0);
+                int indexY = t.TileIndex / Graphic.Tiles.GetLength(0);
+                var g = Graphic.Tiles[indexX, indexY];
+                if ((t.FlipFlags & FlipFlags.Horizontal) > 0) { g = g.FlipX(); }
+                if ((t.FlipFlags & FlipFlags.Vertical) > 0) { g = g.FlipY(); }
+                WriteGraphicTile(g, tileX * 8, tileY * 8, Graphic.Palette, t.PaletteIndex);
+            }
+            void WriteGraphicTile(Graphic.Tile t, int x, int y, Palette pal, int palIndex) {
+                for (int i = 0; i < 8; i++) {
+                    for (int j = 0; j < 8; j++) {
+                        Argb32 col = new Argb32();
+                        int ind = t.Colors[i, j];
+                        if (ind == 0 && Graphic.FirstColorTransparent) {
+                            col.A = 0;
+                        } else {
+                            col.A = 255;
+                            var c = pal.Colors[ind + palIndex * pal.IndexSize];
+                            col.R = c.R8;
+                            col.G = c.G8;
+                            col.B = c.B8;
+                        }
+                        ret[x + i, y + j] = col;
+                    }
                 }
             }
         }

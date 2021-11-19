@@ -6,6 +6,7 @@ namespace Ndst.Graphics {
     // Palette.
     public class Palette {
         public List<RGB5> Colors = new List<RGB5>();
+        public int IndexSize = 0x10;
 
         public void Read(BinaryReader r, int len) {
             Colors = new List<RGB5>();
