@@ -175,9 +175,7 @@ namespace Ndst {
     public class BuildSystemEntry {
         public string SrcPath;
         public string Conversion; // Conversion information.
-        [JsonIgnore]
         public byte[] Preconverted;
-        [JsonIgnore]
         public byte[] ToConvert;
     }
     
