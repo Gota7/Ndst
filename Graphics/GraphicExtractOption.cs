@@ -19,6 +19,11 @@ namespace Ndst.Graphics {
         public string PalettePath;
         public string OutputPath;
 
+        public override void ExtractFiles()
+        {
+            throw new System.NotImplementedException();
+        }
+
         public override List<string> GetFileList() {
             List<string> ret = new List<string>();
             if (ScreenPath != null) ret.Add(ScreenPath);
@@ -27,6 +32,11 @@ namespace Ndst.Graphics {
             return ret;
         }
 
+        public override void PackFiles()
+        {
+            throw new System.NotImplementedException();
+        }
+        
     }
 
 }
