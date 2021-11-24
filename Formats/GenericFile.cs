@@ -27,7 +27,7 @@ namespace Ndst.Formats {
         }
 
         public string GetFormat() {
-            return "";
+            return "None";
         }
 
         public bool IsOfFormat(string str) {

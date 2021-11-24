@@ -64,7 +64,7 @@ namespace Ndst {
         [JsonIgnore]
         public byte[] Banner;
         [JsonIgnore]
-        BuildSystem BuildSystem;
+        ConversionInfo ConversionInfo;
 
         // Banner lengths.
         public static readonly Dictionary<ushort, uint> BANNER_LENGTHS = new Dictionary<ushort, uint>() {
@@ -78,16 +78,17 @@ namespace Ndst {
         internal ROM() {}
 
         // Create a ROM from extracted content.
-        public ROM(string srcPath, string patchPath) {
-            Pack(srcPath, patchPath);
+        public ROM(string srcPath) {
+            Pack(srcPath);
         }
         
         // Create a new ROM.
-        public ROM(string filePath, bool convertFiles = true) {
+        public ROM(string filePath, string conversionPath) {
 
             // Build system.
-            if (convertFiles) {
-                BuildSystem = new BuildSystem();
+            if (!conversionPath.Equals("")) {
+                Directory.CreateDirectory(conversionPath);
+                ConversionInfo = new ConversionInfo(conversionPath);
             }
 
             // Read the file.
@@ -169,7 +170,7 @@ namespace Ndst {
                 }
 
                 // Read filesystem.
-                Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize, convertFiles, BuildSystem);
+                Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize, !conversionPath.Equals(""), ConversionInfo);
                 
                 // Dispose.
                 r.Dispose();
@@ -345,40 +346,25 @@ namespace Ndst {
             ExtractFiles(destFolder, "..", Filesystem);
             fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
             System.IO.File.WriteAllLines(destFolder + "/" + "__ROM__" + "/files.txt", fileInfo.Select(x => x.Item1));
-            if (BuildSystem != null) {
-                BuildSystem.WritePrebuiltItems(destFolder);
-                BuildSystem.Write(destFolder, "", true);
+            if (ConversionInfo != null) {
+                ConversionInfo.WriteBuiltFiles(destFolder);
+                ConversionInfo.WriteConversionInfo();
             }
 
         }
 
         // Pack a ROM.
-        public void Pack(string srcFolder, string patchFolder) {
+        public void Pack(string romFolder) {
 
             // File reading content.
-            bool UsePatch(string path) {
-                return System.IO.File.Exists(patchFolder + "/" + path);
-            }
             byte[] ReadFile(string path) {
-                if (UsePatch(path)) {
-                    return System.IO.File.ReadAllBytes(patchFolder + "/" + path);
-                } else {
-                    return System.IO.File.ReadAllBytes(srcFolder + "/" + path);
-                }
+                return System.IO.File.ReadAllBytes(romFolder + "/" + path);
             }
             string[] ReadFileList(string path) {
-                if (UsePatch(path)) {
-                    return System.IO.File.ReadAllLines(patchFolder + "/" + path);
-                } else {
-                    return System.IO.File.ReadAllLines(srcFolder + "/" + path);
-                }
+                return System.IO.File.ReadAllLines(romFolder + "/" + path);
             }
             T ReadJSON<T>(string path) {
-                if (UsePatch(path)) {
-                    return JsonConvert.DeserializeObject<T>(System.IO.File.ReadAllText(patchFolder + "/" + path));
-                } else {
-                    return JsonConvert.DeserializeObject<T>(System.IO.File.ReadAllText(srcFolder + "/" + path));
-                }
+                return JsonConvert.DeserializeObject<T>(System.IO.File.ReadAllText(romFolder + "/" + path));
             }
             List<ushort> validFileIds = new List<ushort>();
             void VerifyFiles(IEnumerable<ushort> fileIds) {
@@ -389,15 +375,6 @@ namespace Ndst {
                         validFileIds.Add(u);
                     }
                 }
-            }
-
-            // Build system.
-            if (Helper.ROMFileExists("__ROM__/build.txt", srcFolder, patchFolder)) {
-                BuildSystem = new BuildSystem();
-                BuildSystem.Load(srcFolder, patchFolder);
-                BuildSystem.BuildItems(srcFolder, patchFolder, FormatUtil.ConvertItem);
-            } else {
-                BuildSystem = null;
             }
 
             // Get header info and copy it.
@@ -489,15 +466,7 @@ namespace Ndst {
                 File f = new File();
                 f.Name = fileName;
                 f.Id = fileId;
-                if (BuildSystem != null) {
-                    if (BuildSystem.Entries.ContainsKey(filePath)) {
-                        f.Data = new GenericFile() { Data = Helper.ReadROMFile("__ROM__/build/" + filePath + ".0", srcFolder, patchFolder) };
-                    } else {
-                        f.Data = new GenericFile() { Data = Helper.ReadROMFile(filePath, srcFolder, patchFolder) };
-                    }
-                } else {
-                    f.Data = new GenericFile() { Data = Helper.ReadROMFile(filePath, srcFolder, patchFolder) };
-                }
+                f.Data = new GenericFile() { Data = ReadFile(filePath) };
 
                 // Finally add the file to the folder.
                 AddFileToFolder(f, folderPath);

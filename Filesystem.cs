@@ -55,7 +55,7 @@ namespace Ndst {
         public Filesystem() {}
 
         // Create a new filesystem.
-        public Filesystem(BinaryReader r, uint fntOff, uint fntSize, uint fatOff, uint fatSize, bool convertFiles, BuildSystem buildSystem) {
+        public Filesystem(BinaryReader r, uint fntOff, uint fntSize, uint fatOff, uint fatSize, bool convertFiles, ConversionInfo conversionInfo) {
 
             // Read a folder.
             Folder ReadFolder(ushort id, Folder parent = null, string folderName = "") {
@@ -100,7 +100,7 @@ namespace Ndst {
                                 currFolder = currFolder.Parent;
                             }
                             if (filePath.StartsWith('/')) filePath = filePath.Substring(1);
-                            newData = FormatUtil.DoExtractionConversion(buildSystem, r, startOff, filePath, fileData);
+                            newData = FormatUtil.DoExtractionConversion(conversionInfo, r, startOff, filePath, fileData);
                         } else {
                             newData = new GenericFile() {
                                 Data = fileData

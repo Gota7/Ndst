@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,8 +14,26 @@ namespace Ndst {
                     ROM r = new ROM(args[1]);
                     r.Extract(args[2]);
                 } else if (args[0].Equals("-p")) {
-                    ROM r = new ROM(args[1], args[2]);
-                    r.Save(args[3]);
+                    ROM r = new ROM(args[1]);
+                    r.Save(args[2]);
+                } else if (args[0].Equals("-t")) {
+                    string conversion = args[1];
+                    string inFile = args[2];
+                    string outFile = args[3];
+                    foreach (var f in Helper.FileFormats) {
+                        IFormat i = (IFormat)Activator.CreateInstance(f);
+                        if (i.IsOfFormat(conversion)) {
+                            i.Pack(inFile);
+                            using (FileStream s = new FileStream(outFile, FileMode.OpenOrCreate)) {
+                                s.SetLength(0);
+                                using (BinaryWriter w = new BinaryWriter(s)) {
+                                    i.Write(w);
+                                }
+                            }
+                            return;
+                        }
+                    }
+                    throw new Exception("Invalid file conversion!");
                 } else {
                     PrintUsage();
                 }

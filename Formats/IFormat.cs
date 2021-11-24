@@ -19,7 +19,7 @@ namespace Ndst.Formats {
     public static class FormatUtil {
 
         // Do conversion during extraction.
-        public static IFormat DoExtractionConversion(BuildSystem b, BinaryReader r, long fileOff, string originalFilePath, byte[] file, bool parentWasLZ = false) {
+        public static IFormat DoExtractionConversion(ConversionInfo c, BinaryReader r, long fileOff, string originalFilePath, byte[] file, bool parentWasLZ = false) {
             IFormat newData = null;
             foreach (var pFormat in Helper.FileFormats) {
                 newData = (IFormat)Activator.CreateInstance(pFormat);
@@ -30,11 +30,11 @@ namespace Ndst.Formats {
                     r.BaseStream.Position = fileOff;
                     newData.Read(r, file);
                     byte[] containedFile = newData.ContainedFile();
-                    b.AddPrebuiltEntry(originalFilePath, newData.GetFormat(), file, containedFile);
+                    c.AddFileConversion(originalFilePath, newData.GetFormat(), newData);
                     if (containedFile != null) {
                         using (MemoryStream src = new MemoryStream(containedFile)) {
                             BinaryReader br = new BinaryReader(src);
-                            DoExtractionConversion(b, br, 0, originalFilePath, containedFile, newData as LZFile != null);
+                            DoExtractionConversion(c, br, 0, originalFilePath, containedFile, newData as LZFile != null);
                         }
                     }
                     break;

@@ -10,13 +10,11 @@ namespace Ndst {
         public string Conversion; // Conversion ID.
         public int ConversionNumber; // Number of the conversion to do.
         public bool FromMassConversion; // If from converting multiple files.
-        public string Args = "";
 
-        public FileConversion(string conversion, int conversionNumber, bool fromMassConversion = false, string args = "") {
+        public FileConversion(string conversion, int conversionNumber, bool fromMassConversion = false) {
             Conversion = conversion;
             ConversionNumber = conversionNumber;
             FromMassConversion = fromMassConversion;
-            Args = args;
         }
 
     }
@@ -55,7 +53,7 @@ namespace Ndst {
         public void AddFile(string filePath) {
             NumFileConversions.Add(filePath, 0);
             FileConversions.Add(filePath, new List<FileConversion>());
-            FileConversions[filePath].Add(new FileConversion("copy", NumFileConversions[filePath]++, false, RomPath + " " + PatchPath)); // First conversion is always copy.
+            FileConversions[filePath].Add(new FileConversion("copy", NumFileConversions[filePath]++, false)); // First conversion is always copy.
         }
 
         // Add a single file conversion (like compression).
@@ -93,11 +91,13 @@ namespace Ndst {
 
             // Write rules.
             n.Add("rule copy");
-            n.Add("\tcommand = cp $in $out");
+            n.Add("  command = cp $in $out");
+            n.Add("");
             n.Add("rule ndst");
-            n.Add("\tcommand = Ndst $args $in $out");
+            n.Add("  command = ./Ndst $args $in $out");
 
             // ROM files.
+            n.Add("");
             n.Add("build build/__ROM__/header.json: copy " + GetSelectiveCopyBuild("__ROM__/header.json"));
             n.Add("build build/__ROM__/arm9Overlays.json: copy " + GetSelectiveCopyBuild("__ROM__/arm9Overlays.json"));
             n.Add("build build/__ROM__/arm7Overlays.json: copy " + GetSelectiveCopyBuild("__ROM__/arm7Overlays.json"));
@@ -125,7 +125,7 @@ namespace Ndst {
                     outBuilds += f.Key.Replace(" ", "$ ") + "." + f.Value.ConversionNumber + " ";
                 }
                 n.Add("build " + outBuilds.Substring(0, outBuilds.Length - 1) + ": ndst " + ConversionPath + "/" + c.ConversionPath);
-                n.Add("\targs = -t conversion");
+                n.Add("  args = -t conversion");
             }
 
             // Write file conversions.
@@ -147,7 +147,7 @@ namespace Ndst {
                     }
                     if (!f.Value[i].FromMassConversion) {
                         n.Add("build " + outPath + ": ndst " + inPath);
-                        n.Add("\targs = -t " + f.Value[i].Conversion);
+                        n.Add("  args = -t " + f.Value[i].Conversion);
                     }
                 }
                 
@@ -155,7 +155,7 @@ namespace Ndst {
 
             // Finally, build the Nds file.
             n.Add("build " + outputNds + ": ndst " + String.Join(" ", builtFiles));
-            n.Add("\targs = -p build");
+            n.Add("  args = -p build " + outputNds); // Hack because I'm lazy.
 
             // Write build.
             System.IO.File.WriteAllLines("build.ninja", n);
@@ -175,7 +175,22 @@ namespace Ndst {
             }
 
             // Add conversions.
-            // TODO!!!
+            if (!conversionPath.Equals("")) {
+                string currFile = "";
+                foreach (var str in System.IO.File.ReadAllLines(conversionPath + "/conversions.txt")) {
+                    string s = str.Replace(" ", "").Replace("\t", "");
+                    if (s.StartsWith("-")) {
+                        s = s.Substring(1);
+                        if (s.StartsWith("*")) {
+                            // TODO!!!
+                        } else {
+                            n.AddFileConversion(currFile, s);
+                        }
+                    } else {
+                        currFile = s;
+                    }
+                }
+            }
 
             // Write build system.
             n.WriteBuildSystem(outputRomName);
