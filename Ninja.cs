@@ -95,6 +95,10 @@ namespace Ndst {
             n.Add("");
             n.Add("rule ndst");
             n.Add("  command = ./Ndst $args $in $out");
+            n.Add("rule pack");
+            n.Add("  command = ./Ndst -p $folder $out");
+            n.Add("  rspfile = tmp.rsp");
+            n.Add("  rspfile_content = $in");
 
             // ROM files.
             n.Add("");
@@ -154,8 +158,8 @@ namespace Ndst {
             }
 
             // Finally, build the Nds file.
-            n.Add("build " + outputNds + ": ndst " + String.Join(" ", builtFiles));
-            n.Add("  args = -p build " + outputNds); // Hack because I'm lazy.
+            n.Add("build " + outputNds + ": pack " + String.Join(" ", builtFiles));
+            n.Add("  folder = build"); // Hack because I'm lazy.
 
             // Write build.
             System.IO.File.WriteAllLines("build.ninja", n);
