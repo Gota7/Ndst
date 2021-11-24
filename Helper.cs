@@ -168,15 +168,15 @@ namespace Ndst {
             }
         }
 
-        // Read extracted JSON.
-        public static T ReadROMJson<T>(string path, string srcFolder, string patchFolder) {
+        // Read extracted text.
+        public static string ReadROMText(string path, string srcFolder, string patchFolder) {
             bool UsePatch() {
                 return System.IO.File.Exists(patchFolder + "/" + path);
             }
             if (UsePatch()) {
-                return JsonConvert.DeserializeObject<T>(patchFolder + "/" + path);
+                return System.IO.File.ReadAllText(patchFolder + "/" + path);
             } else {
-                return JsonConvert.DeserializeObject<T>(srcFolder + "/" + path);
+                return System.IO.File.ReadAllText(srcFolder + "/" + path);
             }
         }
         
