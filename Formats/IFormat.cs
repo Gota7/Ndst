@@ -43,22 +43,6 @@ namespace Ndst.Formats {
             return newData;
         }
 
-        // Convert an item.
-        public static byte[] ConvertItem(string fileToConvert, string conversion) {
-            foreach (var pFormat in Helper.FileFormats) {
-                IFormat format = (IFormat)Activator.CreateInstance(pFormat);
-                if (format.IsOfFormat(conversion)) {
-                    format.Pack(fileToConvert);
-                    using (MemoryStream o = new MemoryStream()) {
-                        BinaryWriter w = new BinaryWriter(o);
-                        format.Write(w);
-                        return o.ToArray();
-                    }
-                }
-            }
-            return null;
-        }
-
     }
 
 }
