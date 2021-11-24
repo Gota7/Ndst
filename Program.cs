@@ -15,7 +15,7 @@ namespace Ndst {
                 if (args[0].Equals("-e")) {
                     string conversionFolder = "";
                     string outputPath = args[2];
-                    if (args.Length >= 3) {
+                    if (args.Length >= 4) {
                         conversionFolder = args[2];
                         outputPath = args[3];
                     }
