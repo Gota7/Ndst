@@ -56,12 +56,7 @@ namespace Ndst {
         public void WriteBuiltFiles(string folder) {
             foreach (var f in CurrentFormats) {
                 if (f.Value != null) {
-                    using (FileStream s = new FileStream(folder + "/" + f.Key, FileMode.OpenOrCreate)) {
-                        s.SetLength(0);
-                        using (BinaryWriter w = new BinaryWriter(s)) {
-                            w.Write(f.Value);
-                        }
-                    }
+                    f.Value.Extract(folder + "/" + f.Key);
                 }
             }
         }

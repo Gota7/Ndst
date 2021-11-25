@@ -339,7 +339,7 @@ namespace Ndst {
                 foreach (var f in folder.Files) {
                     string fInfo = relativePath + "/" + f.Name;
                     fInfo += " 0x" + f.Id.ToString("X");
-                    f.Data.Extract(path + "/" + f.Name);
+                    if (ConversionInfo == null) f.Data.Extract(path + "/" + f.Name);
                     fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
                 }
             }

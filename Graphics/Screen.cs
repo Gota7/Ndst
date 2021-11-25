@@ -111,6 +111,11 @@ namespace Ndst.Graphics {
             }
         }
 
+        // Create a screen from an image.
+        public void FromImage(Image img) {
+
+        }
+
     }
 
 }

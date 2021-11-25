@@ -12,6 +12,7 @@ namespace Ndst {
         static Dictionary<string, long> Offsets = new Dictionary<string, long>();
         public static List<Type> FileFormats = new List<Type>() {
             typeof(LZFile),
+            typeof(Enpg),
             typeof(GenericFile)
         };
 

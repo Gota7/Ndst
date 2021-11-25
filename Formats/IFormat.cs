@@ -25,7 +25,10 @@ namespace Ndst.Formats {
                 newData = (IFormat)Activator.CreateInstance(pFormat);
                 if (newData.IsType(file)) {
                     if (newData as LZFile != null && parentWasLZ) {
-                        continue;
+                        continue; // No double LZ compression.
+                    }
+                    if (newData as Enpg != null && !originalFilePath.EndsWith(".enpg")) {
+                        continue; // Only assume valid Enpgs are ones that have the extension.
                     }
                     r.BaseStream.Position = fileOff;
                     newData.Read(r, file);
