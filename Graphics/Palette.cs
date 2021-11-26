@@ -138,8 +138,11 @@ namespace Ndst.Graphics {
             }
 
             // Split a bucket into two.
-            void SplitBucketToTwo() {
-
+            void SplitBucketToTwo(List<List<RGB5>> colsLists, List<RGB5> bucket) {
+                List<RGB5> v1, v2;
+                FillBucket(bucket, out v1, out v2);
+                colsLists.Add(v1);
+                colsLists.Add(v2);
             }
 
             // Calculate variance of a bucket.
