@@ -26,15 +26,10 @@ namespace Ndst.Graphics {
         }
 
         // Limit the color palette.
-        public static List<RGB5> LimitColorPalette(Image img, int maxColors, Argb32 firstColor, out int[,] newGraphic) {
-            throw new System.Exception();
-            // Return palette.
-            List<RGB5> ret = new List<RGB5>();
-            ret.Add(Argb32ToRGB5(firstColor));
-            Dictionary<Argb32, RGB5> mappedColors = new Dictionary<Argb32, RGB5>();
-            mappedColors.Add(firstColor, ret[0]);
+        public static List<RGB5> LimitColorPalette(Image<Argb32> img, int maxColors, Argb32 firstColor, out int[,] newGraphic) {
             
-            // Generate color palette.
+            // TODO!!!
+            throw new System.NotImplementedException();
 
             // Argb32 to RGB5.
             RGB5 Argb32ToRGB5(Argb32 a) {
@@ -43,121 +38,82 @@ namespace Ndst.Graphics {
             
         }
 
-        /*
+        // Test limiting a color palette.
+        public static void TestLimitColorPalette(Image<Argb32> img, int maxColors, Argb32? firstColor) {
 
-            Ok, so there are various algorithms for splitting colors, but I personally love the "median-cut" algorithm, as it provides pretty good results.
-            Unfortunately, this only supports splitting a palette into powers of 2. This is perfect for DS, as all palettes are powers of 2.
-            ...Except it's not. We typically need 1 color reserved for say transparency or background color. This is a problem as we need 2^n - 1 "free colors".
-            My solution to this was to modify the median-cut algorithm to allow any number of colors to be generated.
-            My *Median-Cut Approximation* algorithm executes as follows:
+            // Get each pixel.
+            List<RGB5> pixels = new List<RGB5>();
+            List<int> reservedIndices = new List<int>();
+            for (int i = 0; i < img.Width; i++) {
+                for (int j = 0; j < img.Height; j++) {
+                    if (firstColor != null && firstColor.Value.Argb == img[i, j].Argb) {
+                        reservedIndices.Add(img.Width * j + i);
+                    } else {
+                        pixels.Add(Argb32ToRGB5(img[i, j]));
+                    }
+                }
+            }
 
-            1. Put all colors into a list.
-            2. See which component in the list (R, G, or B) has the biggest range.
-            3. Sort elements in the list by this biggest range component from smallest to biggest.
-            4. If splitting each list into two will produce a number of lists less than or equal to the desired amount of colors, split this list into two lists at the middle, and run the mean cut algorithm until the total amount of colors matches the amount of lists or until the next split will make too many colors.
-            5. (I added this one): If splitting each list into two will produce too many colors, then "score" each list by taking the variance of each list. Split only the list with the greatest standard deviation until the desired amount of colors is reached.
-            6. Variance of each list is calculated by finding the average color, and calculating the total squared distance of each color from it.
-            7. Take the average color of each list, and this provides the finalized palette.
+            // Shrink the color palette.
+            List<RGB5> newPal = ShrinkColorPalette(maxColors - (firstColor == null ? 1 : 0));
 
-        */
+            // Argb32 to RGB5.
+            RGB5 Argb32ToRGB5(Argb32 a) {
+                return new RGB5() { R8 = a.R, G8 = a.G, B8 = a.B };
+            }
 
-        // Execute the median-cut algorithm.
-        public static List<RGB5> MedianCutApprox(int numCols, List<RGB5> colors) {
+        }
+
+        // Shrink the color palette.
+        public static List<RGB5> ShrinkColorPalette(int numCols, List<RGB5> colors, out List<int> closestIndices) {
 
             //Run the algorithm.
             int bucketsFilled = 1;
-            List<List<RGB5>> buckets = new List<List<RGB5>>();
-            buckets.Add(colors);
+
+            // We must convert to CIELAB first as RGB sucks at representing what the human eye sees.
+            List<CIELAB> cols = new List<CIELAB>();
+            foreach (var c in colors) {
+                cols.Add(new CIELAB(c));
+            }
+            List<List<CIELAB>> buckets = new List<List<CIELAB>>();
+            buckets.Add(cols);
+
+            // Run until we get the desired number of colors. What we do here is split the bucket with the most variance.
             while (bucketsFilled < numCols) {
-                List<List<RGB5>> newBuckets = new List<List<RGB5>>();
-                foreach (var l in buckets) {
-                    List<RGB5> v1, v2;
-                    FillBucket(l, out v1, out v2);
-                    newBuckets.Add(v1);
-                    newBuckets.Add(v2);
+                List<CIELAB> largestBucketVar = null;
+                double largestVar = double.MinValue;
+                foreach (var b in buckets) {
+                    double variance = CIELAB.CalculateVariance(b);
+                    if (variance >= largestVar) {
+                        largestBucketVar = b;
+                        largestVar = variance;
+                    }
                 }
-                buckets = newBuckets;
-                bucketsFilled *= 2;
+                buckets.Remove(largestBucketVar);
+                List<CIELAB> v1, v2;
+                CIELAB.SplitBucket(largestBucketVar, out v1, out v2);
+                buckets.Add(v1);
+                buckets.Add(v2);
+                bucketsFilled++;
             }
-            
-            // Now that we have each bucket, we take the "average" color of each one.
-            List<RGB5> ret = new List<RGB5>();
+
+            // Convert each bucket into RGB5.
+            List<RGB5> outputRGB = new List<RGB5>();
+            List<CIELAB> outputCIE = new List<CIELAB>();
             foreach (var b in buckets) {
-                ret.Add(new RGB5() {
-                    R5 = (byte)(b.Sum(x => x.R5) / b.Count),
-                    G5 = (byte)(b.Sum(x => x.G5) / b.Count),
-                    B5 = (byte)(b.Sum(x => x.B5) / b.Count)
-                });
-            }
-            return ret;
-
-            // Essentially, what we do here is measure which component of RGB has the greatest range.
-            // Then we sort by the component that has the greatest range, say if G has the greatest range of values we sort by the G component.
-            void FillBucket(List<RGB5> colors, out List<RGB5> vec1, out List<RGB5> vec2) {
-                vec1 = new List<RGB5>();
-                vec2 = new List<RGB5>();
-                int rMin = 255;
-                int rMax = -1;
-                int gMin = 255;
-                int gMax = -1;
-                int bMin = 255;
-                int bMax = -1;
-                foreach (var c in colors) {
-                    if (c.R5 > rMax) {
-                        rMax = c.R5;
-                    }
-                    if (c.R5 < rMin) {
-                        rMin = c.R5;
-                    }
-                    if (c.G5 > gMax) {
-                        gMax = c.G5;
-                    }
-                    if (c.G5 < gMin) {
-                        gMin = c.G5;
-                    }
-                    if (c.B5 > bMax) {
-                        bMax = c.B5;
-                    }
-                    if (c.B5 < bMin) {
-                        bMin = c.B5;
-                    }
-                }
-                int rRange = rMax - rMin;
-                int gRange = gMax - gMin;
-                int bRange = bMax - bMin;
-                List<RGB5> bucket = null;
-                if (rRange >= gRange && rRange >= bRange) {
-                    bucket = colors.OrderBy(x => x.R5).ToList();
-                } else if (gRange >= rRange && gRange >= bRange) {
-                    bucket = colors.OrderBy(x => x.G5).ToList();
-                } else {
-                    bucket = colors.OrderBy(x => x.B5).ToList();
-                }
-                vec1.AddRange(bucket.GetRange(0, bucket.Count / 2));
-                vec2.AddRange(bucket.GetRange(bucket.Count / 2, bucket.Count - bucket.Count / 2));
+                var avg = CIELAB.AverageColor(b);
+                outputCIE.Add(avg);
+                outputRGB.Add(avg.ToRGB5());
             }
 
-            // Split a bucket into two.
-            void SplitBucketToTwo(List<List<RGB5>> colsLists, List<RGB5> bucket) {
-                List<RGB5> v1, v2;
-                FillBucket(bucket, out v1, out v2);
-                colsLists.Add(v1);
-                colsLists.Add(v2);
+            // Get closest value for RGB indices.
+            closestIndices = new List<int>();
+            for (int i = 0; i < cols.Count; i++) {
+                closestIndices.Add(cols[i].ClosestColorIndex(outputCIE));
             }
 
-            // Calculate variance of a bucket.
-            double BucketVariance(List<RGB5> cols) {
-                int averageR = cols.Sum(x => x.R5) / cols.Count;
-                int averageG = cols.Sum(x => x.G5) / cols.Count;
-                int averageB = cols.Sum(x => x.B5) / cols.Count;
-                int variance = 0;
-                foreach (var c in cols) {
-                    variance += (int)Math.Pow(c.R5 - averageR, 2);
-                    variance += (int)Math.Pow(c.G5 - averageG, 2);
-                    variance += (int)Math.Pow(c.B5 - averageB, 2);
-                }
-                return variance / Math.Sqrt(cols.Count);
-            }
+            // Return the final buckets.
+            return outputRGB;
             
         }
 

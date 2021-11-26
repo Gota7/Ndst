@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Ndst.Graphics {
 
@@ -80,10 +81,16 @@ namespace Ndst.Graphics {
             return i;
         }
 
+        // Take the average color of a group of CIELab colors.
         public static CIELAB AverageColor(List<CIELAB> colors) {
-            throw new System.NotImplementedException();
+            CIELAB ret;
+            ret.L = colors.Sum(x => x.L) / colors.Count;
+            ret.A = colors.Sum(x => x.A) / colors.Count;
+            ret.B = colors.Sum(x => x.B) / colors.Count;
+            return ret;
         }
 
+        // The variance of a group of CIELab colors.
         public static double CalculateVariance(List<CIELAB> colors) {
             double ret = 0;
             CIELAB avg = AverageColor(colors);
@@ -91,6 +98,64 @@ namespace Ndst.Graphics {
                 ret += c.DeltaESquared(avg); // (x - xBar)^2
             }
             return ret / (colors.Count - 1); // Use sample variance instead of population. Stats!
+        }
+
+        // Split a group of colors into best fitting groups.
+        // I decided to use the virgin median-cut as I can't figure out how to use the chad Principal Component Analysis.
+        public static void SplitBucket(List<CIELAB> colors, out List<CIELAB> v1, out List<CIELAB> v2) {
+            double lMin = double.MaxValue;
+            double lMax = double.MinValue;
+            double aMin = double.MaxValue;
+            double aMax = double.MinValue;
+            double bMin = double.MaxValue;
+            double bMax = double.MinValue;
+            foreach (var c in colors) {
+                if (c.L > lMax) {
+                    lMax = c.L;
+                }
+                if (c.L < lMin) {
+                    lMin = c.L;
+                }
+                if (c.A > aMax) {
+                    aMax = c.A;
+                }
+                if (c.A < aMin) {
+                    aMin = c.A;
+                }
+                if (c.B > bMax) {
+                    bMax = c.B;
+                }
+                if (c.B < bMin) {
+                    bMin = c.B;
+                }
+            }
+            double lRange = lMax - lMin;
+            double aRange = aMax - aMin;
+            double bRange = bMax - bMin;
+            List<CIELAB> bucket = null;
+            if (lRange >= aRange && lRange >= bRange) {
+                bucket = colors.OrderBy(x => x.L).ToList();
+            } else if (aRange >= lRange && aRange >= bRange) {
+                bucket = colors.OrderBy(x => x.A).ToList();
+            } else {
+                bucket = colors.OrderBy(x => x.B).ToList();
+            }
+            v1 = bucket.GetRange(0, bucket.Count / 2);
+            v2 = bucket.GetRange(bucket.Count / 2, bucket.Count - bucket.Count / 2);
+        }
+
+        // Get the closest color index.
+        public int ClosestColorIndex(List<CIELAB> colors) {
+            double leastDist = double.MaxValue;
+            int leastIndex = -1;
+            for (int i = 0; i < colors.Count; i++) {
+                double dist = DeltaESquared(colors[i]);
+                if (dist < leastDist) {
+                    leastDist = dist;
+                    leastIndex = i;
+                }
+            }
+            return leastIndex;
         }
 
     }
