@@ -10,7 +10,8 @@ namespace Ndst.Graphics {
         public byte B5 { get => Get5BitCol(10); set { Set5BitCol(10, value); } }
         public byte R8 { get => To8BitCol(Get5BitCol(0)); set { Set5BitCol(0, To5BitCol(value)); } } 
         public byte G8 { get => To8BitCol(Get5BitCol(5)); set { Set5BitCol(5, To5BitCol(value)); } } 
-        public byte B8 { get => To8BitCol(Get5BitCol(10)); set { Set5BitCol(10, To5BitCol(value)); } } 
+        public byte B8 { get => To8BitCol(Get5BitCol(10)); set { Set5BitCol(10, To5BitCol(value)); } }
+        public const byte MAX_COMPONENT_VALUE = 0b11111; 
 
         public RGB5(ushort col) {
             Val = col;
