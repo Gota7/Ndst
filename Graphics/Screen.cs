@@ -146,7 +146,8 @@ namespace Ndst.Graphics {
 
             // Get the graphic.
             int[,] newGraphic;
-            Palette.LimitColorPalette(img, numColorsToGenerate, backgroundColor, out newGraphic);
+            s.Graphic.Palette.Colors = Palette.LimitColorPalette(img, numColorsToGenerate, backgroundColor, out newGraphic);
+            if (oneLessColor) s.Graphic.Palette.Colors.Insert(0, new RGB5(0));
             for (int i = 0; i < graphicWidthTiles * 8; i++) {
                 for (int j = 0; j < graphicHeightTiles * 8; j++) {
                     int tileX = i / 8;
@@ -161,6 +162,9 @@ namespace Ndst.Graphics {
             }
             var sTemp = Screen.GenerateDefault(s.Graphic);
             s.Tiles = sTemp.Tiles;
+            while (s.Graphic.Palette.Colors.Count < s.Graphic.Palette.IndexSize) {
+                s.Graphic.Palette.Colors.Add(new RGB5());
+            }
 
             // Return the final screen.
             return s;

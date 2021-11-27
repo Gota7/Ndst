@@ -19,7 +19,7 @@ namespace Ndst.Graphics {
             }
         }
 
-        public void Write(BinaryWriter w, int len) {
+        public void Write(BinaryWriter w) {
             foreach (var c in Colors) {
                 w.Write(c.Val);
             }
@@ -54,7 +54,7 @@ namespace Ndst.Graphics {
                         if (reservedIndices.Contains(img.Height * i + j)) {
                             newGraphic[i, j] = 0;
                         } else {
-                            newGraphic[i, j] = FindColor(uniquePixels, Argb32ToRGB5(img[i, j]));
+                            newGraphic[i, j] = FindColor(uniquePixels, Argb32ToRGB5(img[i, j])) + colOffset;
                         }
                     }
                 }

@@ -25,6 +25,7 @@ namespace Ndst.Formats {
 
         public void Write(BinaryWriter w) {
             Image.Graphic.Write(w);
+            Image.Graphic.Palette.Write(w);
         }
 
         public void Extract(string path) {
@@ -32,7 +33,7 @@ namespace Ndst.Formats {
         }
 
         public void Pack(string path) {
-            Image<Argb32> img = Image<Argb32>.Load<Argb32>(path + ".png");
+            Image<Argb32> img = Image<Argb32>.Load<Argb32>(path); // Don't add extensions, copied to not have it.
             Image = Screen.FromImage(img, false, false, false, true, true, 256 / 8, 256 / 8, 256, null);
         }
 

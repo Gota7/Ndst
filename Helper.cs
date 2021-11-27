@@ -180,6 +180,19 @@ namespace Ndst {
                 return System.IO.File.ReadAllText(srcFolder + "/" + path);
             }
         }
+
+        // Get a reader.
+        public static BinaryReader GetReader(string filePath) {
+            FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
+            return new BinaryReader(s);
+        }
+
+        // Get a writer.
+        public static BinaryWriter GetWriter(string filePath) {
+            FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
+            s.SetLength(0);
+            return new BinaryWriter(s);
+        }
         
     }
 
