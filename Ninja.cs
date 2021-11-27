@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ndst.Formats;
 using Newtonsoft.Json;
 
 namespace Ndst {
@@ -10,11 +11,13 @@ namespace Ndst {
         public string Conversion; // Conversion ID.
         public int ConversionNumber; // Number of the conversion to do.
         public bool FromMassConversion; // If from converting multiple files.
+        public string CustomExtension; // Custom file extension.
 
-        public FileConversion(string conversion, int conversionNumber, bool fromMassConversion = false) {
+        public FileConversion(string conversion, int conversionNumber, bool fromMassConversion = false, string customExtension = "") {
             Conversion = conversion;
             ConversionNumber = conversionNumber;
             FromMassConversion = fromMassConversion;
+            CustomExtension = customExtension;
         }
 
     }
@@ -57,8 +60,8 @@ namespace Ndst {
         }
 
         // Add a single file conversion (like compression).
-        public void AddFileConversion(string filePath, string conversion) {
-            FileConversions[filePath].Add(new FileConversion(conversion, NumFileConversions[filePath]++));
+        public void AddFileConversion(string filePath, string conversion, string customExtension) {
+            FileConversions[filePath].Add(new FileConversion(conversion, NumFileConversions[filePath]++, false, customExtension));
         }
 
         // Add a conversion that involves multiple files (like graphics).
@@ -146,7 +149,11 @@ namespace Ndst {
                         builtFiles.Add(outPath);
                     }
                     if (f.Value[i].ConversionNumber == 0) {
-                        n.Add("build " + outPath + ": copy " + GetSelectiveCopyBuild(f.Key));
+                        string extAppend = "";
+                        foreach (var v in f.Value) {
+                            extAppend += v.CustomExtension;
+                        }
+                        n.Add("build " + outPath + ": copy " + GetSelectiveCopyBuild(f.Key) + extAppend);
                         continue;
                     }
                     if (!f.Value[i].FromMassConversion) {
@@ -188,7 +195,15 @@ namespace Ndst {
                         if (s.StartsWith("*")) {
                             // TODO!!!
                         } else {
-                            n.AddFileConversion(currFile, s);
+                            string ext = "";
+                            foreach (var format in Helper.FileFormats) {
+                                IFormat i = (IFormat)Activator.CreateInstance(format);
+                                if (i.IsOfFormat(s)) {
+                                    ext = i.GetPathExtension();
+                                    break;
+                                }
+                            }
+                            n.AddFileConversion(currFile, s, ext);
                         }
                     } else {
                         currFile = s;

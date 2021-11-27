@@ -1,6 +1,7 @@
 using System.IO;
 using Ndst.Graphics;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Ndst.Formats {
 
@@ -23,7 +24,7 @@ namespace Ndst.Formats {
         }
 
         public void Write(BinaryWriter w) {
-            throw new System.NotImplementedException();
+            Image.Graphic.Write(w);
         }
 
         public void Extract(string path) {
@@ -31,7 +32,8 @@ namespace Ndst.Formats {
         }
 
         public void Pack(string path) {
-            throw new System.NotImplementedException();
+            Image<Argb32> img = Image<Argb32>.Load<Argb32>(path + ".png");
+            Image = Screen.FromImage(img, false, false, false, true, true, 256 / 8, 256 / 8, 256, null);
         }
 
         public string GetFormat() {
@@ -45,6 +47,8 @@ namespace Ndst.Formats {
         public bool IsOfFormat(string str) {
             return str.Equals("Enpg");
         }
+
+        public string GetPathExtension() => ".png";
         
     }
 

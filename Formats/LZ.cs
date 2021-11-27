@@ -65,8 +65,9 @@ namespace Ndst.Formats {
             return LZ77_Decompress(CompressedData, HasHeader);
         }
 
-        public static void LZ77_Compress_Search(byte[] data, int pos, out int match, out int length)
-        {
+        public string GetPathExtension() => "";
+
+        public static void LZ77_Compress_Search(byte[] data, int pos, out int match, out int length) {
             int maxMatchDiff = 4096;
             int maxMatchLen = 18;
             match = 0;
@@ -96,8 +97,7 @@ namespace Ndst.Formats {
             }
         }
 
-        public static byte[] LZ77_Compress(byte[] data, bool header = false)
-        {
+        public static byte[] LZ77_Compress(byte[] data, bool header = false) {
             ByteArrayOutputStream res = new ByteArrayOutputStream();
             if (header)
             {
@@ -151,8 +151,7 @@ namespace Ndst.Formats {
         }
 
 
-        public static byte[] LZ77_FastCompress(byte[] source)
-        {
+        public static byte[] LZ77_FastCompress(byte[] source) {
             int DataLen = 4;
             DataLen += source.Length;
             DataLen += (int)Math.Ceiling((double)source.Length / 8);
@@ -182,8 +181,7 @@ namespace Ndst.Formats {
             return dest;
         }
 
-        public static int LZ77_GetDecompressedSize(byte[] source, bool WithHeader)
-        {
+        public static int LZ77_GetDecompressedSize(byte[] source, bool WithHeader) {
             // This code converted from Elitemap 
             int DataLen;
             if(!WithHeader)
@@ -193,8 +191,7 @@ namespace Ndst.Formats {
             return DataLen;
         }
         
-        public static byte[] LZ77_Decompress(byte[] source, bool WithHeader)
-        {
+        public static byte[] LZ77_Decompress(byte[] source, bool WithHeader) {
             // This code converted from Elitemap 
             int DataLen;
             DataLen = source[1] | (source[2] << 8) | (source[3] << 16);
@@ -262,8 +259,7 @@ namespace Ndst.Formats {
 
     }
 
-    public class ByteArrayOutputStream
-	{
+    public class ByteArrayOutputStream {
         //implements an unbonded array to store unlimited data.
         //writes in amortized constant time.
 

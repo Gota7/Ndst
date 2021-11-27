@@ -112,7 +112,58 @@ namespace Ndst.Graphics {
         }
 
         // Create a screen from an image.
-        public void FromImage(Image img) {
+        public static Screen FromImage(Image<Argb32> img, bool optimizeGraphic, bool affine, bool is4Bpp, bool firstColorTransparent, bool isEnpg, int graphicWidthTiles, int graphicHeightTiles, int colorsPerPalette, Argb32? backgroundColor) {
+
+            // TODO: ADD SUPPORT FOR OPTIMIZING THE GRAPHIC! (Identical tiles, flips, etc.)
+
+            // Dimensions check.
+            if (!optimizeGraphic) {
+                if (img.Width != graphicWidthTiles * 8 || img.Height != graphicHeightTiles * 8) {
+                    throw new Exception("Image size must be " + (graphicWidthTiles * 8) + "x" + (graphicHeightTiles * 8) + "!");
+                }
+            } else {
+                if (img.Width % 8 != 0 || img.Height % 8 != 0) {
+                    throw new Exception("Image size must be a multiple of 8 in both dimensions!");
+                }
+            }
+
+            // Create stuff.
+            Screen s = new Screen();
+            s.Affine = affine;
+            s.Graphic = new Graphic();
+            s.Graphic.FirstColorTransparent = firstColorTransparent;
+            s.Graphic.Is4BPP = is4Bpp;
+            s.Graphic.IsEnpg = isEnpg;
+            s.Graphic.Tiles = new Graphic.Tile[graphicWidthTiles, graphicHeightTiles];
+            s.Graphic.Palette = new Palette();
+            s.Graphic.Palette.IndexSize = colorsPerPalette;
+
+            // Take into account background/transparent color.
+            bool oneLessColor = backgroundColor != null || firstColorTransparent;
+            int numColorsToGenerate = colorsPerPalette;
+            if (oneLessColor) numColorsToGenerate--;
+            if (firstColorTransparent) backgroundColor = new Argb32(0, 0, 0, 0);
+
+            // Get the graphic.
+            int[,] newGraphic;
+            Palette.LimitColorPalette(img, numColorsToGenerate, backgroundColor, out newGraphic);
+            for (int i = 0; i < graphicWidthTiles * 8; i++) {
+                for (int j = 0; j < graphicHeightTiles * 8; j++) {
+                    int tileX = i / 8;
+                    int tileY = j / 8;
+                    int pixelX = i % 8;
+                    int pixelY = j % 8;
+                    if (pixelX == 0 && pixelY == 0) {
+                        s.Graphic.Tiles[tileX, tileY] = new Graphic.Tile();
+                    }
+                    s.Graphic.Tiles[tileX, tileY].Colors[pixelX, pixelY] = (byte)newGraphic[i, j];
+                }
+            }
+            var sTemp = Screen.GenerateDefault(s.Graphic);
+            s.Tiles = sTemp.Tiles;
+
+            // Return the final screen.
+            return s;
 
         }
 

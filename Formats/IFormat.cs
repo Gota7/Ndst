@@ -13,6 +13,7 @@ namespace Ndst.Formats {
         string GetFormat();
         bool IsOfFormat(string str);
         byte[] ContainedFile();
+        string GetPathExtension();
     }
 
     // Format tools.

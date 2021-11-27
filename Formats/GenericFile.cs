@@ -38,6 +38,8 @@ namespace Ndst.Formats {
             return null;
         }
 
+        public string GetPathExtension() => "";
+
     }
 
 }
