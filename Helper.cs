@@ -4,6 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Ndst.Formats;
 using System.Text;
+using Assimp;
 
 namespace Ndst {
 
@@ -54,6 +55,14 @@ namespace Ndst {
             return Encoding.Unicode.GetString(ret.ToArray());
         }
 
+        public static Fix4x12i ReadFix4x12i(this BinaryReader r) {
+            return new Fix4x12i() { Val = r.ReadInt16() };
+        }
+
+        public static Fix20x12i ReadFix20x12i(this BinaryReader r) {
+            return new Fix20x12i() { Val = r.ReadInt32() };
+        }
+
         // Write a fixed length string.
         public static void WriteFixedLen(this BinaryWriter w, string str, uint len) {
             uint numToWrite = Math.Min((uint)str.Length, len);
@@ -61,6 +70,14 @@ namespace Ndst {
                 w.Write(str[(int)i]);
             }
             w.Write0s(len - numToWrite);
+        }
+
+        public static void Write(this BinaryWriter w, Fix4x12i val) {
+            w.Write(val.Val);
+        }
+
+        public static void Write(this BinaryWriter w, Fix20x12i val) {
+            w.Write(val.Val);
         }
 
         // Save an offset.
@@ -192,6 +209,14 @@ namespace Ndst {
             FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
             s.SetLength(0);
             return new BinaryWriter(s);
+        }
+
+        public static Vector3D Add(this Vector3D a, Vector3D b) {
+            return new Vector3D(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+        }
+
+        public static Vector3D Mult(this Vector3D a, float b) {
+            return new Vector3D(a.X * b, a.Y * b, a.Z * b);
         }
         
     }
