@@ -57,6 +57,7 @@ namespace Ndst {
         public void WriteBuiltFiles(string folder) {
             foreach (var f in CurrentFormats) {
                 if (f.Value != null) {
+                    Directory.CreateDirectory(Path.GetDirectoryName(folder + "/" + f.Key));
                     f.Value.Extract(folder + "/" + f.Key);
                 }
             }

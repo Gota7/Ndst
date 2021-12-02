@@ -7,6 +7,7 @@ namespace Ndst.Formats {
 
     // Nitro archive to house more files.
     public class Narc : Folder, IFormat {
+        public static ConversionInfo ConversionInfo; // HACKY. We must set this before calling NARC read.
 
         public bool IsType(byte[] data) {
             return data.Length >= 4 && data[0] == 'N' && data[1] == 'A' && data[2] == 'R' && data[3] == 'C';
@@ -29,9 +30,9 @@ namespace Ndst.Formats {
             
             // FNTB, file name table.
             r.ReadUInt32(); // Skip magic.
-            long fimgOff = r.ReadUInt32() + r.BaseStream.Position - basePos; // Calculate where the FIMG block is.
+            long fimgOff = r.ReadUInt32() + r.BaseStream.Position; // Calculate where the FIMG block is.
             long fntOff = r.BaseStream.Position;
-            bool convertFiles = false;
+            bool convertFiles = ConversionInfo != null;
 
             // Read root.
             var root = ReadFolder(0);
@@ -72,14 +73,14 @@ namespace Ndst.Formats {
                         byte[] fileData = r.ReadBytes(fileOffSizes[currId].Item2);
                         IFormat newData = null;
                         if (convertFiles) {
-                            /*string filePath = name;
+                            string filePath = name;
                             Folder currFolder = ret;
                             while (currFolder != null) {
                                 filePath = currFolder.Name + "/" + filePath;
                                 currFolder = currFolder.Parent;
                             }
                             if (filePath.StartsWith('/')) filePath = filePath.Substring(1);
-                            newData = FormatUtil.DoExtractionConversion(conversionInfo, r, startOff, filePath, fileData);*/
+                            newData = FormatUtil.DoExtractionConversion(ConversionInfo, r, bakPos, filePath, fileData);
                         } else {
                             newData = new GenericFile() {
                                 Data = fileData
@@ -192,9 +193,9 @@ namespace Ndst.Formats {
         public void Extract(string destFolder) {
 
             // Path info.
-            if (destFolder.EndsWith(".narc")) destFolder = destFolder.Substring(0, destFolder.Length - 5);
             string arcName = new DirectoryInfo(destFolder).Name;
-            destFolder = Directory.GetParent(destFolder).FullName;
+            string archiveTextPath = Directory.GetParent(destFolder).FullName;
+            destFolder = Directory.GetParent(destFolder).Parent.FullName;
             
             // Extract files.
             List<Tuple<string, ushort>> fileInfo = new List<Tuple<string, ushort>>();
@@ -212,8 +213,7 @@ namespace Ndst.Formats {
             }
             ExtractFiles(destFolder, "..", this);
             fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
-            Directory.CreateDirectory(destFolder + "/__ARCHIVE__");
-            System.IO.File.WriteAllLines(destFolder + "/" + "__ARCHIVE__/" + arcName + ".txt", fileInfo.Select(x => x.Item1));
+            System.IO.File.WriteAllLines(archiveTextPath + "/" + arcName + ".txt", fileInfo.Select(x => x.Item1));
 
         }
 
@@ -221,19 +221,17 @@ namespace Ndst.Formats {
 
             // Path info.
             string arcName = new DirectoryInfo(archivePath).Name;
-            archivePath = Directory.GetParent(archivePath).FullName;
+            string archiveTextPath = Directory.GetParent(archivePath).FullName;
+            archivePath = Directory.GetParent(archivePath).Parent.FullName;
 
             // File reading content.
             byte[] ReadFile(string path) {
                 return System.IO.File.ReadAllBytes(archivePath + "/" + path);
             }
-            string[] ReadFileList(string path) {
-                return System.IO.File.ReadAllLines(archivePath + "/" + path);
-            }
             
             // Read files.
             ushort currFolderId = 1;
-            string[] fileList = ReadFileList("__ARCHIVE__/" + arcName + ".txt");
+            string[] fileList = System.IO.File.ReadAllLines(archiveTextPath + "/" + arcName); // Can't add .txt extension here.
             Dictionary<string, Folder> folders = new Dictionary<string, Folder>();
             folders.Add("", this);
             List<ushort> validFileIds = new List<ushort>();
@@ -346,7 +344,7 @@ namespace Ndst.Formats {
             return str.Equals("Narc");
         }
 
-        public string GetPathExtension() => "";
+        public string GetPathExtension() => ".txt";
 
     }
 

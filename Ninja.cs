@@ -75,6 +75,28 @@ namespace Ndst {
             MassFileConversion m = new MassFileConversion(fs, conversionFile, conversionType);
         }
 
+        // Make sure NARCs get all files built.
+        public void AddAllNarcFiles(string[] conversionFile, string romPath, string patchPath) {
+            string currFile = "";
+            foreach (var str in conversionFile) {
+                    string s = str.Replace(" ", "").Replace("\t", "");
+                    if (s.StartsWith("-")) {
+                        s = s.Substring(1);
+                        if (s.Equals("Narc")) {
+                            currFile += ".txt";
+                            var archiveList = Helper.ReadROMLines(currFile, romPath, patchPath);
+                            foreach (var f in archiveList) {
+                                string newFile = f.Split(' ')[0];
+                                if (!newFile.StartsWith("../")) throw new Exception("Archive file paths must start with ../");
+                                AddFile(newFile.Substring(3));
+                            }
+                        }
+                    } else {
+                        currFile = s;
+                    }
+                }
+        }
+
         // Get copy.
         private string GetSelectiveCopyBuild(string path) {
             string fetchedPath = "";
@@ -135,8 +157,8 @@ namespace Ndst {
                 n.Add("  args = -t conversion");
             }
 
-            // Write file conversions.
-            foreach (var f in FileConversions) {
+            // Write file conversions. Do it in reverse though due to NARC stuff.
+            foreach (var f in FileConversions.Reverse()) {
 
                 // Write file conversions.
                 for (int i = 0; i < f.Value.Count; i++) {
@@ -188,7 +210,9 @@ namespace Ndst {
             // Add conversions.
             if (!conversionPath.Equals("")) {
                 string currFile = "";
-                foreach (var str in System.IO.File.ReadAllLines(conversionPath + "/conversions.txt")) {
+                string[] conversionFile = System.IO.File.ReadAllLines(conversionPath + "/conversions.txt");
+                n.AddAllNarcFiles(conversionFile, romFolder, patchFolder);
+                foreach (var str in conversionFile) {
                     string s = str.Replace(" ", "").Replace("\t", "");
                     if (s.StartsWith("-")) {
                         s = s.Substring(1);

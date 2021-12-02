@@ -31,6 +31,9 @@ namespace Ndst.Formats {
                     if (newData as Enpg != null && !originalFilePath.EndsWith(".enpg")) {
                         continue; // Only assume valid Enpgs are ones that have the extension.
                     }
+                    if (newData as Narc != null) {
+                        Narc.ConversionInfo = c; // Must do this to allow conversion.
+                    }
                     r.BaseStream.Position = fileOff;
                     newData.Read(r, file);
                     byte[] containedFile = newData.ContainedFile();
