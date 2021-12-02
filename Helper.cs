@@ -4,7 +4,6 @@ using System.IO;
 using Newtonsoft.Json;
 using Ndst.Formats;
 using System.Text;
-using Assimp;
 
 namespace Ndst {
 
@@ -13,6 +12,7 @@ namespace Ndst {
         static Dictionary<string, long> Offsets = new Dictionary<string, long>();
         public static List<Type> FileFormats = new List<Type>() {
             typeof(LZFile),
+            typeof(Narc),
             typeof(Enpg),
             typeof(GenericFile)
         };
@@ -198,6 +198,11 @@ namespace Ndst {
             }
         }
 
+        // Write a ROM file.
+        public static void WriteROMFile(string path, string patchFolder, byte[] file) {
+            // TODO: CREATE DIR!!!
+        }
+
         // Get a reader.
         public static BinaryReader GetReader(string filePath) {
             FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
@@ -209,14 +214,6 @@ namespace Ndst {
             FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
             s.SetLength(0);
             return new BinaryWriter(s);
-        }
-
-        public static Vector3D Add(this Vector3D a, Vector3D b) {
-            return new Vector3D(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-        }
-
-        public static Vector3D Mult(this Vector3D a, float b) {
-            return new Vector3D(a.X * b, a.Y * b, a.Z * b);
         }
         
     }

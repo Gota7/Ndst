@@ -142,14 +142,14 @@ namespace Ndst.Formats {
             }
             void WriteFolder(Folder folder) {
                 w.WriteOffset("folder" + folder.Id, fntBase);
-                foreach (var f in folder.Files) {
-                    w.Write((byte)f.Name.Length);
-                    w.Write(f.Name.ToCharArray());
-                }
                 foreach (var f in folder.Folders) {
                     w.Write((byte)(f.Name.Length | 0x80));
                     w.Write(f.Name.ToCharArray());
                     w.Write((ushort)(f.Id | 0xF000));
+                }
+                foreach (var f in folder.Files) {
+                    w.Write((byte)f.Name.Length);
+                    w.Write(f.Name.ToCharArray());
                 }
                 w.Write((byte)0);
                 foreach (var f in folder.Folders) {
@@ -190,6 +190,11 @@ namespace Ndst.Formats {
         }
 
         public void Extract(string destFolder) {
+
+            // Path info.
+            if (destFolder.EndsWith(".narc")) destFolder = destFolder.Substring(0, destFolder.Length - 5);
+            string arcName = new DirectoryInfo(destFolder).Name;
+            destFolder = Directory.GetParent(destFolder).FullName;
             
             // Extract files.
             List<Tuple<string, ushort>> fileInfo = new List<Tuple<string, ushort>>();
@@ -208,18 +213,30 @@ namespace Ndst.Formats {
             ExtractFiles(destFolder, "..", this);
             fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
             Directory.CreateDirectory(destFolder + "/__ARCHIVE__");
-            System.IO.File.WriteAllLines(destFolder + "/" + "__ARCHIVE__" + "/files.txt", fileInfo.Select(x => x.Item1));
+            System.IO.File.WriteAllLines(destFolder + "/" + "__ARCHIVE__/" + arcName + ".txt", fileInfo.Select(x => x.Item1));
 
         }
 
-        public void Pack(string path) {
+        public void Pack(string archivePath) {
+
+            // Path info.
+            string arcName = new DirectoryInfo(archivePath).Name;
+            archivePath = Directory.GetParent(archivePath).FullName;
+
+            // File reading content.
+            byte[] ReadFile(string path) {
+                return System.IO.File.ReadAllBytes(archivePath + "/" + path);
+            }
+            string[] ReadFileList(string path) {
+                return System.IO.File.ReadAllLines(archivePath + "/" + path);
+            }
             
             // Read files.
             ushort currFolderId = 1;
-            string[] fileList = ReadFileList("__ARCHIVE__/files.txt");
+            string[] fileList = ReadFileList("__ARCHIVE__/" + arcName + ".txt");
             Dictionary<string, Folder> folders = new Dictionary<string, Folder>();
-            Filesystem = new Filesystem();
-            folders.Add("", Filesystem);
+            folders.Add("", this);
+            List<ushort> validFileIds = new List<ushort>();
             foreach (var s in fileList) {
                 AddFileToFilesystem(s);
             }

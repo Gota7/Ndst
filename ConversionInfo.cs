@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Ndst.Formats;
 
 namespace Ndst {
@@ -36,7 +37,7 @@ namespace Ndst {
         public void WriteConversionInfo() {
             List<string> ret = new List<string>();
             foreach (var f in Files) {
-                if (f.Value.Count <= 1) {
+                if (f.Value.Count < 1 || f.Value.Where(x => !x.ConversionStep.Equals("None")).Count() == 0) {
                     continue;
                 }
                 ret.Add(f.Key);
