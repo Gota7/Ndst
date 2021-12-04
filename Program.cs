@@ -54,6 +54,8 @@ namespace Ndst {
                         }
                     }
                     throw new Exception("Invalid file conversion!");
+                } else if (args[0].Equals("-c")) {
+                    System.IO.File.Copy(args[1], args[2], true);
                 } else {
                     PrintUsage();
                 }
@@ -70,6 +72,7 @@ namespace Ndst {
             Console.WriteLine("\t\t-n Generate a ninja build system for ROM folder (input1), patch folder (input2), and optional conversion folder (input3) to build ROM (output).");
             Console.WriteLine("\t\t-p Pack a ROM folder (input1) to a ROM (output).");
             Console.WriteLine("\t\t-t Use file conversion method (input1) to convert file (input2) and save as (output).");
+            Console.WriteLine("\t\t-c Copy file (input1) to (output).");
         }
 
     }

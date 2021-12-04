@@ -33,3 +33,4 @@ Usage:
             -n Generate a ninja build system for ROM folder (input1), patch folder (input2), and optional conversion folder (input3) to build ROM (output).
             -p Pack a ROM folder (input1) to a ROM (output).
             -t Use file conversion method (input1) to convert file (input2) and save as (output).
+            -c Copy file (input1) to (output).
