@@ -190,6 +190,10 @@ namespace Ndst.Formats {
 
         }
 
+        public byte[] RawData() {
+            throw new System.NotImplementedException();
+        }
+
         public void Extract(string destFolder) {
 
             // Path info.

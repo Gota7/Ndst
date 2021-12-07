@@ -18,6 +18,10 @@ namespace Ndst.Formats {
             w.Write(Data);
         }
 
+        public byte[] RawData() {
+            return Data;
+        }
+
         public void Extract(string path) {
             System.IO.File.WriteAllBytes(path, Data);
         }

@@ -28,6 +28,10 @@ namespace Ndst.Formats {
             Image.Graphic.Palette.Write(w);
         }
 
+        public byte[] RawData() {
+            throw new System.NotImplementedException();
+        }
+
         public void Extract(string path) {
             Image.ToImage().SaveAsPng(path + ".png");
         }
