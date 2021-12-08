@@ -19,7 +19,7 @@ namespace Ndst {
         Dictionary<string, List<ConversionStage>> Files = new Dictionary<string, List<ConversionStage>>();
         public Dictionary<string, IFormat> CurrentFormats = new Dictionary<string, IFormat>();
         List<ExtractOptions> BulkConversions = new List<ExtractOptions>();
-        List<string> FilesToBulkConversions = new List<string>();
+        public List<string> FilesToBulkConversions = new List<string>();
 
         public ConversionInfo(string conversionFolder) {
             ConversionFolder = conversionFolder;
