@@ -121,6 +121,16 @@ namespace Ndst.Models {
             return ret;
         }
 
+        // Get a row.
+        public Vec4 GetRow(int i) {
+            return new Vec4(this[0, i], this[1, i], this[2, i], this[3, i]);
+        }
+
+        // Get a column.
+        public Vec4 GetCol(int i) {
+            return new Vec4(this[i, 0], this[i, 1], this[i, 2], this[i, 3]);
+        }
+
     }
 
 }

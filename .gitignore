@@ -353,3 +353,17 @@ MigrationBackup/
 # DS Stuff.
 ROM
 *.nds
+Shining
+Convert
+Convert2
+Convert3
+NSMB
+Test
+build
+.ninja_deps
+.ninja_log
+build.ninja
+ar1
+*.narc
+*.kcl
+teresa_house

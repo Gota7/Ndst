@@ -13,9 +13,62 @@ namespace Ndst {
         public static List<Type> FileFormats = new List<Type>() {
             typeof(LZFile),
             typeof(Narc),
+            typeof(Kcl),
             typeof(Enpg),
             typeof(GenericFile)
         };
+
+        // Read a 24-bit integer.
+        public static Int24 ReadInt24(this BinaryReader r) {
+            Int24 ret = new Int24();
+            ret.Read(r);
+            return ret;
+        }
+
+        // Read multiple signed bytes.
+        public static sbyte[] ReadSBytes(this BinaryReader r, int num) {
+            sbyte[] ret = new sbyte[num];
+            for (int i = 0; i < num; i++) {
+                ret[i] = r.ReadSByte();
+            }
+            return ret;
+        }
+
+        // Read multiple ints.
+        public static short[] ReadInt16s(this BinaryReader r, int num) {
+            short[] ret = new short[num];
+            for (int i = 0; i < num; i++) {
+                ret[i] = r.ReadInt16();
+            }
+            return ret;
+        }
+
+        // Read multiple ints.
+        public static int[] ReadInt32s(this BinaryReader r, int num) {
+            int[] ret = new int[num];
+            for (int i = 0; i < num; i++) {
+                ret[i] = r.ReadInt32();
+            }
+            return ret;
+        }
+
+        // Read multiple ints.
+        public static uint[] ReadUInt32s(this BinaryReader r, int num) {
+            uint[] ret = new uint[num];
+            for (int i = 0; i < num; i++) {
+                ret[i] = r.ReadUInt32();
+            }
+            return ret;
+        }
+
+        // Read multiple floats.
+        public static float[] ReadSingles(this BinaryReader r, int num) {
+            float[] ret = new float[num];
+            for (int i = 0; i < num; i++) {
+                ret[i] = r.ReadSingle();
+            }
+            return ret;
+        }
 
         // Read a null terminated string.
         public static string ReadNullTerminated(this BinaryReader r) {
@@ -61,6 +114,34 @@ namespace Ndst {
 
         public static Fix20x12i ReadFix20x12i(this BinaryReader r) {
             return new Fix20x12i() { Val = r.ReadInt32() };
+        }
+
+        // Write multiple ints.
+        public static void Write(this BinaryWriter w, short[] data) {
+            foreach (var f in data) {
+                w.Write(f);
+            }
+        }
+
+        // Write multiple ints.
+        public static void Write(this BinaryWriter w, int[] data) {
+            foreach (var f in data) {
+                w.Write(f);
+            }
+        }
+
+        // Write multiple ints.
+        public static void Write(this BinaryWriter w, uint[] data) {
+            foreach (var f in data) {
+                w.Write(f);
+            }
+        }
+
+        // Write multiple floats.
+        public static void Write(this BinaryWriter w, float[] data) {
+            foreach (var f in data) {
+                w.Write(f);
+            }
         }
 
         // Write a fixed length string.
@@ -220,6 +301,17 @@ namespace Ndst {
             FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);
             s.SetLength(0);
             return new BinaryWriter(s);
+        }
+
+        // Get bytes.
+        public delegate void WriteFunction(BinaryWriter w);
+        public static byte[] GetBytes(WriteFunction func) {
+            using (MemoryStream o = new MemoryStream()) {
+                using (BinaryWriter w = new BinaryWriter(o)) {
+                    func(w);
+                }
+                return o.ToArray();
+            }
         }
         
     }
