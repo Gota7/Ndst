@@ -8,6 +8,7 @@ namespace Ndst.Models {
         public Node Parent;
         public List<Node> Children = new List<Node>();
         public List<int> Meshes = new List<int>();
+        public List<int> Materials = new List<int>();
 
         public void AddNode(Node n) {
             n.Parent = this;

@@ -32,7 +32,7 @@ namespace Ndst.Formats {
         }
 
         public bool IsType(byte[] data) {
-            return true;
+            return data.Length > 4 && data[0] == 0x38 && data[1] == 0 && data[2] == 0 && data[3] == 0; 
         }
 
         public void Read(BinaryReader r, byte[] rawData) {
@@ -73,7 +73,7 @@ namespace Ndst.Formats {
 
             // Get planes.
             r.BaseStream.Position = baseOff + planeOff;
-            int numPlanes = (int)(octreeOff - (planeOff + 0x10)) / 0x10;
+            int numPlanes = (int)(octreeOff - planeOff) / 0x10;
             for (int i = 0; i < numPlanes; i++) {
 
                 // Plane properties.
@@ -107,23 +107,36 @@ namespace Ndst.Formats {
         public void Extract(string path) {
             
             // Create folder.
+            path = path.Replace(".", "__");
             Directory.CreateDirectory(path); 
 
             // Create new model.
             Model m = new Model();
             m.AddNode(new Node() { Meshes = new List<int>() { 0 } });
-            Mesh h = new Mesh();
-            m.Meshes.Add(h);
+            Dictionary<int, Mesh> meshes = new Dictionary<int, Mesh>();
+            Dictionary<int, Material> materials = new Dictionary<int, Material>();
+            Dictionary<int, int> vertexOffs = new Dictionary<int, int>();
 
             // Add each plane to the model.
             foreach (var p in Planes) {
 
+                // By type index. Each mesh will be a collision type and have its own material too.
+                if (!meshes.ContainsKey(p.KclType)) {
+                    var mesh = new Mesh();
+                    var mat = new Material();
+                    meshes.Add(p.KclType, mesh);
+                    materials.Add(p.KclType, mat);
+                    meshes[p.KclType].MaterialIndex = m.Materials.Count - 1;
+                    m.Materials.Add(mat);
+                    m.Meshes.Add(mesh);
+                    vertexOffs.Add(p.KclType, 0);
+                }
+
                 // Add indices.
-                int indCount = 0;
                 Face f = new Face();
-                f.VertexIndices.Add(indCount);
-                f.VertexIndices.Add(indCount + 1);
-                f.VertexIndices.Add(indCount + 2);
+                f.VertexIndices.Add(vertexOffs[p.KclType]++);
+                f.VertexIndices.Add(vertexOffs[p.KclType]++);
+                f.VertexIndices.Add(vertexOffs[p.KclType]++);
 
                 // Get all positions.
                 Vec3 Vertex = ToVec20(Vertices[p.VertexInd]) / 15.625f;
@@ -138,14 +151,16 @@ namespace Ndst.Formats {
                 Vec3 v1 = Vertex;
                 Vec3 v2 = v1 + CrossB * (DotB != 0f ? (float)(p.Length / 16000) / DotB : 0f);
                 Vec3 v3 = v1 + CrossA * (DotA != 0f ? (float)(p.Length / 16000) / DotA : 0f);
-                h.Vertices.Add(v1);
-                h.Vertices.Add(v2);
-                h.Vertices.Add(v3);
+                meshes[p.KclType].Vertices.Add(v1);
+                meshes[p.KclType].Vertices.Add(v2);
+                meshes[p.KclType].Vertices.Add(v3);
                 
                 // Add face.
-                h.Faces.Add(f);
+                meshes[p.KclType].Faces.Add(f);
 
             }
+            m.EnableMaterials = true;
+            m.GenerateMaterialNames();
             m.SaveModel(path + "/Model.obj", "Obj");
 
             // ToVec.
