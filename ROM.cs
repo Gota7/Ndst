@@ -140,13 +140,6 @@ namespace Ndst {
                 r.ReadUInt16(); // Nintendo logo CRC. It is literally just the CRC of the logo.
                 r.ReadUInt16(); // Header CRC. It is the CRC of everything up to this point (0 to 0x15E).
 
-                // Get banner.
-                r.BaseStream.Position = iconBannerOffset;
-                ushort bannerVersion = r.ReadUInt16();
-                r.BaseStream.Position -= 2;
-                int bannerLen = BANNER_LENGTHS.ContainsKey(bannerVersion) ? (int)BANNER_LENGTHS[bannerVersion] : (int)BANNER_LENGTHS[1];
-                Banner = r.ReadBytes(bannerLen);
-
                 // Code binaries.
                 r.BaseStream.Position = arm9Offset;
                 Arm9 = r.ReadBytes((int)arm9Size);
@@ -210,6 +203,19 @@ namespace Ndst {
                         ConversionInfo.AddFileConversion("__ROM__/Arm7/" + o.Id + ".bin", "None", new GenericFile() { Data = o.Data });
                     }
 
+                }
+
+                // Get banner.
+                r.BaseStream.Position = iconBannerOffset;
+                if (ConversionInfo == null) {
+                    ushort bannerVersion = r.ReadUInt16();
+                    r.BaseStream.Position -= 2;
+                    int bannerLen = BANNER_LENGTHS.ContainsKey(bannerVersion) ? (int)BANNER_LENGTHS[bannerVersion] : (int)BANNER_LENGTHS[1];
+                    Banner = r.ReadBytes(bannerLen);
+                } else {
+                    Banner b = new Banner();
+                    b.Read(r, null);
+                    ConversionInfo.AddFileConversion("__ROM__/banner.bin", "Banner", b);
                 }
 
                 // Add batch conversion info.

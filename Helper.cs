@@ -14,6 +14,7 @@ namespace Ndst {
             typeof(LZFile),
             typeof(Narc),
             typeof(Enpg),
+            typeof(Banner),
             typeof(GenericFile)
         };
 
