@@ -18,7 +18,7 @@ namespace Ndst {
 
         // Convert files.
         public abstract List<string> GetFileList();
-        public abstract void ExtractFiles();
+        public abstract void ExtractFiles(string destRomFolder, string conversionFolder, ConversionInfo conversionInfo);
         public abstract void PackFiles();
 
     }

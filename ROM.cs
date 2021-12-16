@@ -172,6 +172,16 @@ namespace Ndst {
                 // Read filesystem.
                 Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize, !conversionPath.Equals(""), ConversionInfo);
                 
+                // Add batch conversion info.
+                if (ConversionInfo != null) {
+                    if (System.IO.File.Exists(conversionPath + "/batchConversions.txt")) {
+                        foreach (var f in System.IO.File.ReadAllLines(conversionPath + "/batchConversions.txt")) {
+                            var split = f.Split(' ');
+                            ConversionInfo.AddBulkConversion(split[0], split[1]);
+                        }
+                    }
+                }
+
                 // Dispose.
                 r.Dispose();
 

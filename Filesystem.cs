@@ -34,6 +34,29 @@ namespace Ndst {
             }
             return ret;
         }
+
+        public File GetFileByPath(string path) {
+            string folder = null;
+            string rest = path;
+            if (path.Contains('/')) {
+                var split = path.Split('/');
+                folder = split[0];
+                rest = split[1];
+                var fd = Folders.Where(x => x.Name.Equals(folder));
+                if (fd.Count() > 0) {
+                    return fd.ElementAt(0).GetFileByPath(rest);
+                } else {
+                    return null;
+                }
+            }
+            var f = Files.Where(x => x.Name.Equals(rest));
+            if (f.Count() > 0) {
+                return f.ElementAt(0);
+            } else {
+                return null;
+            }
+        }
+
     }
 
     // File.

@@ -32,6 +32,10 @@ namespace Ndst.Formats {
             w.Write(CompressedData);
         }
 
+        public byte[] RawData() {
+            return LZ77_Decompress(CompressedData, HasHeader);
+        }
+
         public void Extract(string path) {
 
             // Decompress data.

@@ -28,6 +28,10 @@ namespace Ndst.Formats {
             throw new System.NotImplementedException();
         }
 
+        public byte[] RawData() {
+            throw new System.NotImplementedException();
+        }
+
         public void Extract(string path) {
             throw new System.NotImplementedException();
         }

@@ -8,6 +8,7 @@ namespace Ndst.Formats {
         bool IsType(byte[] data);
         void Read(BinaryReader r, byte[] rawData);
         void Write(BinaryWriter w);
+        byte[] RawData();
         void Extract(string path);
         void Pack(string path);
         string GetFormat();

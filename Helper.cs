@@ -209,6 +209,12 @@ namespace Ndst {
             return new BinaryReader(s);
         }
 
+        // Get a reader.
+        public static BinaryReader GetReader(byte[] bin) {
+            MemoryStream s = new MemoryStream(bin);
+            return new BinaryReader(s);
+        }
+
         // Get a writer.
         public static BinaryWriter GetWriter(string filePath) {
             FileStream s = new FileStream(filePath, FileMode.OpenOrCreate);

@@ -99,6 +99,10 @@ namespace Ndst.Formats {
             
         }
 
+        public byte[] RawData() {
+            throw new System.NotImplementedException();
+        }
+
         // Extract as an OBJ.
         public void Extract(string path) {
             
