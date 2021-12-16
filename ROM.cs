@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Ndst.Formats;
 using Newtonsoft.Json;
 
@@ -173,6 +174,44 @@ namespace Ndst {
                 // Read filesystem.
                 Filesystem = new Filesystem(r, fntOffset, fntSize, fatOffset, fatSize, !conversionPath.Equals(""), ConversionInfo);
                 
+                // Add ROM info.
+                if (ConversionInfo != null) {
+
+                    // Get file info.
+                    List<Tuple<string, ushort>> fileInfo = new List<Tuple<string, ushort>>();
+                    void GetFiles(string relativePath, Folder folder) {
+                        foreach (var f in folder.Folders) {
+                            GetFiles(relativePath + "/" + f.Name, f);
+                        }
+                        foreach (var f in folder.Files) {
+                            string fInfo = relativePath + "/" + f.Name;
+                            fInfo += " 0x" + f.Id.ToString("X");
+                            fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
+                        }
+                    }
+                    GetFiles("..", Filesystem);
+                    fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
+
+                    // ROM info.
+                    ConversionInfo.AddFileConversion("__ROM__/header.json", "None", new GenericFile() { Data = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(this, Formatting.Indented)) });
+                    ConversionInfo.AddFileConversion("__ROM__/arm9Overlays.json", "None", new GenericFile() { Data = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(Arm9Overlays, Formatting.Indented)) });
+                    ConversionInfo.AddFileConversion("__ROM__/arm7Overlays.json", "None", new GenericFile() { Data = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(Arm7Overlays, Formatting.Indented)) });
+                    ConversionInfo.AddFileConversion("__ROM__/arm9.bin", "None", new GenericFile() { Data = Arm9 });
+                    ConversionInfo.AddFileConversion("__ROM__/arm7.bin", "None", new GenericFile() { Data = Arm7 });
+                    ConversionInfo.AddFileConversion("__ROM__/nintendoLogo.bin", "None", new GenericFile() { Data = NintendoLogo });
+                    ConversionInfo.AddFileConversion("__ROM__/banner.bin", "None", new GenericFile() { Data = Banner });
+                    ConversionInfo.AddFileConversion("__ROM__/files.txt", "None", new GenericFile() { Data = Encoding.ASCII.GetBytes(string.Join('\n', fileInfo.Select(x => x.Item1))) });
+
+                    // Overlays.
+                    foreach (var o in Arm9Overlays) {
+                        ConversionInfo.AddFileConversion("__ROM__/Arm9/" + o.Id + ".bin", "None", new GenericFile() { Data = o.Data });
+                    }
+                    foreach (var o in Arm7Overlays) {
+                        ConversionInfo.AddFileConversion("__ROM__/Arm7/" + o.Id + ".bin", "None", new GenericFile() { Data = o.Data });
+                    }
+
+                }
+
                 // Add batch conversion info.
                 if (ConversionInfo != null) {
                     if (System.IO.File.Exists(conversionPath + "/batchConversions.txt")) {
@@ -298,7 +337,7 @@ namespace Ndst {
         }
 
         // Calculate the CRC.
-        public ushort CalcCRC(byte[] bytes) {
+        public static ushort CalcCRC(byte[] bytes) {
             uint crc = 0xFFFF;
             uint[] val = {0xC0C1, 0xC181, 0xC301, 0xC601, 0xCC01, 0xD801, 0xF001, 0xA001};
             for (uint i = 0; i < bytes.Length; i++) {
@@ -318,29 +357,9 @@ namespace Ndst {
 
             // Create folder if needed.
             Directory.CreateDirectory(destFolder);
-
-            // Extract ROM info.
             Directory.CreateDirectory(destFolder + "/" + "__ROM__");
-            System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "header.json", JsonConvert.SerializeObject(this, Formatting.Indented));
-            System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "nintendoLogo.bin", NintendoLogo);
-            System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "banner.bin", Banner);
 
-            // Extract code.
-            Directory.CreateDirectory(destFolder + "/" + "__ROM__");
-            System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "arm9.bin", Arm9);
-            System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "arm7.bin", Arm7);
-            System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "arm9Overlays.json", JsonConvert.SerializeObject(Arm9Overlays, Formatting.Indented));
-            System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "arm7Overlays.json", JsonConvert.SerializeObject(Arm7Overlays, Formatting.Indented));
-            Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm9");
-            Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm7");
-            foreach (var o in Arm9Overlays) {
-                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm9" + "/" + o.Id + ".bin", o.Data);
-            }
-            foreach (var o in Arm7Overlays) {
-                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm7" + "/" + o.Id + ".bin", o.Data);
-            }
-
-            // Extract files.
+            // Get file info.
             List<Tuple<string, ushort>> fileInfo = new List<Tuple<string, ushort>>();
             void ExtractFiles(string path, string relativePath, Folder folder) {
                 Directory.CreateDirectory(path);
@@ -354,12 +373,39 @@ namespace Ndst {
                     fileInfo.Add(new Tuple<string, ushort>(fInfo, f.Id));
                 }
             }
-            ExtractFiles(destFolder, "..", Filesystem);
             fileInfo = fileInfo.OrderBy(x => x.Item2).ToList();
-            System.IO.File.WriteAllLines(destFolder + "/" + "__ROM__" + "/files.txt", fileInfo.Select(x => x.Item1));
+
+            // Extract files.
+            ExtractFiles(destFolder, "..", Filesystem);
             if (ConversionInfo != null) {
                 ConversionInfo.WriteBuiltFiles(destFolder);
                 ConversionInfo.WriteConversionInfo();
+            }
+
+            // If no conversions.
+            if (ConversionInfo == null) {
+
+                // Extract ROM info.
+                System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "header.json", JsonConvert.SerializeObject(this, Formatting.Indented));
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "nintendoLogo.bin", NintendoLogo);
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "banner.bin", Banner);
+                System.IO.File.WriteAllLines(destFolder + "/" + "__ROM__" + "/files.txt", fileInfo.Select(x => x.Item1));
+
+                // Extract code.
+                Directory.CreateDirectory(destFolder + "/" + "__ROM__");
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "arm9.bin", Arm9);
+                System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "arm7.bin", Arm7);
+                System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "arm9Overlays.json", JsonConvert.SerializeObject(Arm9Overlays, Formatting.Indented));
+                System.IO.File.WriteAllText(destFolder + "/" + "__ROM__" + "/" + "arm7Overlays.json", JsonConvert.SerializeObject(Arm7Overlays, Formatting.Indented));
+                Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm9");
+                Directory.CreateDirectory(destFolder + "/" + "__ROM__" + "/" + "Arm7");
+                foreach (var o in Arm9Overlays) {
+                    System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm9" + "/" + o.Id + ".bin", o.Data);
+                }
+                foreach (var o in Arm7Overlays) {
+                    System.IO.File.WriteAllBytes(destFolder + "/" + "__ROM__" + "/" + "Arm7" + "/" + o.Id + ".bin", o.Data);
+                }
+
             }
 
         }
