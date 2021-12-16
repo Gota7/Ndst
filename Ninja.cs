@@ -117,34 +117,13 @@ namespace Ndst {
             // Write rules.
             n.Add("rule copy");
             n.Add("  command = ./Ndst -c $in $out");
-            n.Add("");
             n.Add("rule ndst");
             n.Add("  command = ./Ndst $args $in $out");
             n.Add("rule pack");
             n.Add("  command = ./Ndst -p $folder $out");
             n.Add("  rspfile = tmp.rsp");
             n.Add("  rspfile_content = $in");
-
-            // ROM files.
             n.Add("");
-            n.Add("build build/__ROM__/header.json: copy " + GetSelectiveCopyBuild("__ROM__/header.json"));
-            n.Add("build build/__ROM__/arm9Overlays.json: copy " + GetSelectiveCopyBuild("__ROM__/arm9Overlays.json"));
-            n.Add("build build/__ROM__/arm7Overlays.json: copy " + GetSelectiveCopyBuild("__ROM__/arm7Overlays.json"));
-            n.Add("build build/__ROM__/arm9.bin: copy " + GetSelectiveCopyBuild("__ROM__/arm9.bin"));
-            n.Add("build build/__ROM__/arm7.bin: copy " + GetSelectiveCopyBuild("__ROM__/arm7.bin"));
-            n.Add("build build/__ROM__/nintendoLogo.bin: copy " + GetSelectiveCopyBuild("__ROM__/nintendoLogo.bin"));
-            n.Add("build build/__ROM__/banner.bin: copy " + GetSelectiveCopyBuild("__ROM__/banner.bin"));
-            n.Add("build build/__ROM__/files.txt: copy " + GetSelectiveCopyBuild("__ROM__/files.txt"));
-
-            // Overlays.
-            List<Overlay> ov9List = JsonConvert.DeserializeObject<List<Overlay>>(Helper.ReadROMText("__ROM__/arm9Overlays.json", RomPath, PatchPath));
-            foreach (var o in ov9List) {
-                n.Add("build build/__ROM__/Arm9/" + o.Id + ".bin: copy " + GetSelectiveCopyBuild("__ROM__/Arm9/" + o.Id + ".bin"));
-            }
-            List<Overlay> ov7List = JsonConvert.DeserializeObject<List<Overlay>>(Helper.ReadROMText("__ROM__/arm7Overlays.json", RomPath, PatchPath));
-            foreach (var o in ov7List) {
-                n.Add("build build/__ROM__/Arm7/" + o.Id + ".bin: copy " + GetSelectiveCopyBuild("__ROM__/Arm7/" + o.Id + ".bin"));
-            }
 
             // Write conversions.
             List<string> builtFiles = new List<string>();
@@ -200,6 +179,30 @@ namespace Ndst {
 
             // Start.
             NinjaBuildSystem n = new NinjaBuildSystem(romFolder, patchFolder, conversionPath);
+
+            // Add ROM info.
+            n.AddFile("__ROM__/header.json");
+            n.AddFile("__ROM__/arm9Overlays.json");
+            n.AddFile("__ROM__/arm7Overlays.json");
+            n.AddFile("__ROM__/arm9.bin");
+            n.AddFile("__ROM__/arm7.bin");
+            n.AddFile("__ROM__/nintendoLogo.bin");
+            n.AddFile("__ROM__/banner.bin");
+            n.AddFile("__ROM__/files.txt");
+
+            // Add ARM9 overlays.
+            List<Overlay> ov9List = JsonConvert.DeserializeObject<List<Overlay>>(Helper.ReadROMText("__ROM__/arm9Overlays.json", romFolder, patchFolder));
+            foreach (var o in ov9List) {
+                n.AddFile("__ROM__/Arm9/" + o.Id + ".bin");
+            }
+
+            // Add ARM7 overlays.
+            List<Overlay> ov7List = JsonConvert.DeserializeObject<List<Overlay>>(Helper.ReadROMText("__ROM__/arm7Overlays.json", romFolder, patchFolder));
+            foreach (var o in ov7List) {
+                n.AddFile("__ROM__/Arm7/" + o.Id + ".bin");
+            }
+
+            // Add files.
             var fileList = Helper.ReadROMLines("__ROM__/files.txt", romFolder, patchFolder);
             foreach (var f in fileList) {
                 string fileName = f;

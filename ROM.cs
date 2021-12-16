@@ -143,7 +143,8 @@ namespace Ndst {
                 r.BaseStream.Position = iconBannerOffset;
                 ushort bannerVersion = r.ReadUInt16();
                 r.BaseStream.Position -= 2;
-                Banner = r.ReadBytes((int)BANNER_LENGTHS[bannerVersion]);
+                int bannerLen = BANNER_LENGTHS.ContainsKey(bannerVersion) ? (int)BANNER_LENGTHS[bannerVersion] : (int)BANNER_LENGTHS[1];
+                Banner = r.ReadBytes(bannerLen);
 
                 // Code binaries.
                 r.BaseStream.Position = arm9Offset;
