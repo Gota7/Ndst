@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ndst.Code;
 using Ndst.Formats;
 using Ndst.Graphics;
 using Newtonsoft.Json;
@@ -39,6 +40,9 @@ namespace Ndst {
         public void AddBulkConversion(string bulkConversionPath, string bulkConvertType) {
             ExtractOptions eo = null;
             switch (bulkConvertType) {
+                case "Code":
+                    eo = JsonConvert.DeserializeObject<CompilationOptions>(System.IO.File.ReadAllText(ConversionFolder + "/" + bulkConversionPath));
+                    break;
                 case "Graphic":
                     eo = JsonConvert.DeserializeObject<GraphicExtractOptions>(System.IO.File.ReadAllText(ConversionFolder + "/" + bulkConversionPath));
                     break;

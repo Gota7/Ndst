@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Ndst.Code;
 using Ndst.Formats;
 using Newtonsoft.Json;
 
@@ -204,7 +205,11 @@ namespace Ndst {
 
                     // Overlays.
                     foreach (var o in Arm9Overlays) {
-                        ConversionInfo.AddFileConversion("__ROM__/Arm9/" + o.Id + ".bin", "None", new GenericFile() { Data = o.Data });
+                        var data = o.Data;
+                        if ((o.Flags & 0x01000000) > 0) {
+                            data = Jap77.Decompress(o.Data);
+                        }
+                        ConversionInfo.AddFileConversion("__ROM__/Arm9/" + o.Id + ".bin", "None", new GenericFile() { Data = data });
                     }
                     foreach (var o in Arm7Overlays) {
                         ConversionInfo.AddFileConversion("__ROM__/Arm7/" + o.Id + ".bin", "None", new GenericFile() { Data = o.Data });

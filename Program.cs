@@ -3,12 +3,22 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ndst.Formats;
+using Ndst.Graphics;
+//using Ndst.Sound.Formats;
+using Newtonsoft.Json;
+using SixLabors.ImageSharp;
 
 namespace Ndst {
 
     class Program {
 
         static void Main(string[] args) {
+            //ROM r2 = new ROM("Shining.nds", "Convert");
+            //r2.Extract("Shining");
+            //NinjaBuildSystem.GenerateBuildSystem("Shining", "Patch", "Convert", "Test.nds");
+            ROM r3 = new ROM("NSMBDecompressed.nds", "ConvertNSMBDecompressed");
+            r3.Extract("NSMBDecompressed");
+            return;
             if (args.Length < 3) {
                 PrintUsage();
             } else {
