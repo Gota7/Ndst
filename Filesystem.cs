@@ -235,7 +235,7 @@ namespace Ndst {
             }
 
             // Write ROM size.
-            w.BaseStream.Position -= 0x88;
+            w.Align(0x10);
             w.WriteOffset("romSize");
 
         }

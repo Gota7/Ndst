@@ -278,15 +278,9 @@ namespace Ndst {
                 w.Write(HeaderSize);
                 w.Write0s(0xC0 - (uint)w.BaseStream.Position);
 
-                // Write logo and CRCs.
+                // Write logo.
                 w.Write(NintendoLogo);
                 w.Write(CalcCRC(NintendoLogo));
-                BinaryReader r = new BinaryReader(s);
-                long bakPos = w.BaseStream.Position;
-                r.BaseStream.Position = 0;
-                ushort crc = CalcCRC(r.ReadBytes((int)bakPos));
-                w.BaseStream.Position = bakPos;
-                w.Write(crc);
                 w.Align(HeaderSize);
 
                 // Write Arm9.
@@ -331,6 +325,13 @@ namespace Ndst {
 
                 // Write filesystem.
                 Filesystem.WriteFilesystem(w, arm9OverlayOffs, arm7OverlayOffs, Banner);
+
+                // CRC.
+                BinaryReader r = new BinaryReader(s);
+                r.BaseStream.Position = 0;
+                ushort crc = CalcCRC(r.ReadBytes(0x15E));
+                w.BaseStream.Position = 0x15E;
+                w.Write(crc);
 
             }
 
